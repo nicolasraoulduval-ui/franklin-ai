@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Franklin AI — Ta banque voit tout. Elle ne dit rien. Franklin, lui, te raconte tout.</title>
+<meta name="description" content="Uploade ton relevé bancaire. Franklin le lit en entier et t'écrit le portrait le plus drôle et le plus honnête qu'on ait jamais fait de toi. Fichier supprimé après analyse.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@500;700;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#2f4df0;--blue-deep:#2038c0;--bluebg:#edf1fb;--paper:#fbfbf8;
+    --ink:#14161f;--ink-soft:#4a4f60;--hl:#9cc3ff;--red:#e6392e;--ticket:#fffdf8;
+    --line:rgba(20,22,31,.12);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;line-height:1.6}
+  .wrap{max-width:1060px;margin:0 auto;padding:0 28px}
+  h1,h2,h3{font-family:'Gabarito',sans-serif;font-weight:900;letter-spacing:-.015em}
+  .mono{font-family:'IBM Plex Mono',monospace}
+  .hl{background:var(--hl);padding:0 7px;border-radius:4px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+  /* nav */
+  nav{border-bottom:2px solid var(--ink);background:var(--paper);position:sticky;top:0;z-index:50}
+  nav .wrap{display:flex;justify-content:space-between;align-items:center;padding-top:16px;padding-bottom:16px}
+  .logo{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:700}
+  .logo i{font-style:normal;background:var(--blue);color:#fff;padding:1px 7px;border-radius:4px}
+  .nav-cta{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;letter-spacing:.06em;color:#fff;background:var(--ink);padding:11px 18px;border-radius:6px;text-decoration:none;transition:background .2s}
+  .nav-cta:hover{background:var(--blue)}
+  /* hero */
+  .hero{background:var(--bluebg);border-bottom:2px solid var(--ink);overflow:hidden}
+  .hero .wrap{display:grid;grid-template-columns:1.2fr .8fr;gap:36px;align-items:center;padding-top:64px;padding-bottom:64px}
+  .hero .tag{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--blue);margin-bottom:22px;display:flex;align-items:center;gap:12px}
+  .hero .tag::before{content:"";width:30px;height:2px;background:var(--blue)}
+  h1{font-size:clamp(34px,5.2vw,56px);line-height:1.06}
+  .hero p.lede{font-size:clamp(16px,2vw,18px);color:var(--ink-soft);max-width:48ch;margin-top:20px}
+  .hero p.lede b{color:var(--ink)}
+  .hero-ctas{display:flex;gap:14px;flex-wrap:wrap;margin-top:28px;align-items:center}
+  .btn{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:13.5px;font-weight:700;letter-spacing:.03em;text-decoration:none;padding:16px 26px;border-radius:8px;transition:all .2s}
+  .btn-primary{background:var(--blue);color:#fff;box-shadow:4px 4px 0 var(--ink)}
+  .btn-primary:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink)}
+  .btn-ghost{color:var(--ink);border:2px solid var(--ink);background:transparent}
+  .btn-ghost:hover{background:var(--ink);color:#fff}
+  /* --- mascotte animée --- */
+  .stage{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px}
+  .bubble{
+    position:relative;font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:500;
+    background:#fff;border:2.5px solid var(--ink);border-radius:12px;padding:14px 18px;
+    min-height:52px;width:min(300px,100%);color:var(--ink);
+  }
+  .bubble::after{content:"";position:absolute;bottom:-12px;left:50%;margin-left:-9px;width:18px;height:18px;background:#fff;border-right:2.5px solid var(--ink);border-bottom:2.5px solid var(--ink);transform:rotate(45deg)}
+  .bubble .caret{display:inline-block;width:8px;height:16px;background:var(--blue);vertical-align:-2px;animation:caret 1s steps(1) infinite}
+  @keyframes caret{50%{opacity:0}}
+  .walker{display:flex;flex-direction:column;align-items:center;gap:14px;animation:pace 12s ease-in-out infinite;will-change:transform}
+  @keyframes pace{
+    0%,100%{transform:translateX(-85px)}
+    50%{transform:translateX(85px)}
+  }
+  .mascot-svg{animation:bob .6s ease-in-out infinite}
+  .mascot-svg .legL{transform-origin:78px 232px;animation:stepA .6s ease-in-out infinite}
+  .mascot-svg .legR{transform-origin:116px 232px;animation:stepB .6s ease-in-out infinite}
+  @keyframes stepA{0%,100%{transform:rotate(13deg) translateY(0)}25%{transform:rotate(0deg) translateY(-4px)}50%{transform:rotate(-13deg) translateY(0)}75%{transform:rotate(0deg) translateY(0)}}
+  @keyframes stepB{0%,100%{transform:rotate(-13deg) translateY(0)}25%{transform:rotate(0deg) translateY(0)}50%{transform:rotate(13deg) translateY(0)}75%{transform:rotate(0deg) translateY(-4px)}}
+  .mascot-svg .armL{transform-origin:40px 150px;animation:swingA .6s ease-in-out infinite}
+  .mascot-svg .armR{transform-origin:154px 160px;animation:swingB .6s ease-in-out infinite}
+  @keyframes swingA{0%,100%{transform:rotate(-9deg)}50%{transform:rotate(9deg)}}
+  @keyframes swingB{0%,100%{transform:rotate(7deg)}50%{transform:rotate(-7deg)}}
+  .mascot-svg .eyes{transform-box:fill-box;transform-origin:center;animation:blink 4.6s infinite}
+  .mascot-svg .mouth-open{opacity:0}
+  .mascot-svg.talking .mouth-smile{animation:mouthA .32s steps(1) infinite}
+  .mascot-svg.talking .mouth-open{animation:mouthB .32s steps(1) infinite}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(1.2deg)}25%{transform:translateY(-3px) rotate(0)}50%{transform:translateY(0) rotate(-1.2deg)}75%{transform:translateY(-3px) rotate(0)}}
+  @keyframes wave{0%,55%,100%{transform:rotate(0deg)}65%{transform:rotate(-14deg)}75%{transform:rotate(6deg)}85%{transform:rotate(-10deg)}}
+  @keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.08)}}
+  @keyframes mouthA{0%,49%{opacity:1}50%,100%{opacity:0}}
+  @keyframes mouthB{0%,49%{opacity:0}50%,100%{opacity:1}}
+  @media(prefers-reduced-motion:reduce){
+    .walker,.mascot-svg,.mascot-svg .armL,.mascot-svg .armR,.mascot-svg .eyes,.mascot-svg .legL,.mascot-svg .legR{animation:none}
+  }
+  /* sections */
+  .sec-label{font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--blue);display:flex;align-items:center;gap:14px;margin-bottom:20px}
+  .sec-label::after{content:"";flex:1;height:1px;background:var(--line)}
+  h2{font-size:clamp(28px,4.4vw,42px);line-height:1.08}
+  /* roasts */
+  .roasts{padding:88px 0 0}
+  .roasts .intro{color:var(--ink-soft);margin-top:14px;max-width:56ch;font-size:16px}
+  .roast-list{margin-top:36px;border:2.5px solid var(--ink);border-radius:12px;overflow:hidden;background:var(--ticket);box-shadow:6px 6px 0 rgba(20,22,31,.15)}
+  .roast{display:grid;grid-template-columns:250px 1fr;gap:20px;padding:22px 26px;border-bottom:2px dashed var(--line);align-items:center}
+  .roast:last-child{border-bottom:none}
+  .roast .lineitem{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink)}
+  .roast .lineitem b{display:block;font-size:14.5px}
+  .roast .lineitem span{color:var(--ink-soft);font-size:12px}
+  .roast .verdict{font-family:'Gabarito',sans-serif;font-size:18.5px;font-weight:700;line-height:1.3}
+  .roast .verdict em{font-style:normal;background:var(--hl);padding:0 5px;border-radius:3px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+  .roast .verdict .r{color:var(--red)}
+  .roasts .disclaimer{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink-soft);margin-top:14px}
+  /* steps */
+  .steps{padding:88px 0 0}
+  .step-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:40px;border:2px solid var(--ink);border-radius:10px;overflow:hidden}
+  .step{padding:30px 26px 34px;border-right:2px solid var(--ink);background:#fff}
+  .step:last-child{border-right:none}
+  .step:nth-child(2){background:var(--bluebg)}
+  .step .n{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:var(--blue);letter-spacing:.14em;margin-bottom:14px}
+  .step h3{font-size:21px;margin-bottom:8px}
+  .step p{font-size:14.5px;color:var(--ink-soft)}
+  /* privacy */
+  .privacy{padding:88px 0 0}
+  .privacy-box{border:2px solid var(--ink);border-radius:10px;overflow:hidden;margin-top:40px;display:grid;grid-template-columns:1fr 1fr 1fr}
+  .privacy-box>div{padding:28px 24px;border-right:2px solid var(--ink);background:#fff}
+  .privacy-box>div:last-child{border-right:none}
+  .privacy-box h4{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px;color:var(--blue)}
+  .privacy-box p{font-size:14px;color:var(--ink-soft)}
+  /* pricing */
+  .pricing{padding:96px 0 80px}
+  .price-card{max-width:540px;margin:40px auto 0;border:2.5px solid var(--ink);border-radius:12px;background:#fff;padding:44px 40px;text-align:center;position:relative;box-shadow:6px 6px 0 rgba(20,22,31,.15)}
+  .price-card::before{content:"OFFRE DE LANCEMENT";position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.18em;padding:5px 14px;border-radius:4px;white-space:nowrap}
+  .price-card .amount{font-family:'IBM Plex Mono',monospace;font-size:58px;font-weight:700;letter-spacing:-.03em}
+  .price-card .amount small{font-size:20px}
+  .price-card .per{font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin-top:4px}
+  .price-card ul{list-style:none;margin:26px 0;text-align:left}
+  .price-card li{padding:10px 0;border-bottom:1px dashed var(--line);font-size:15px;color:var(--ink-soft);display:flex;gap:12px}
+  .price-card li::before{content:"→";color:var(--blue);font-weight:700}
+  .price-card .btn{width:100%;text-align:center}
+  /* faq */
+  .faq{padding:80px 0 30px;max-width:740px;margin:0 auto}
+  .faq details{border-top:1px solid var(--line)}
+  .faq details:last-of-type{border-bottom:1px solid var(--line)}
+  .faq summary{font-family:'Gabarito',sans-serif;font-size:17.5px;font-weight:700;padding:20px 0;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}
+  .faq summary::after{content:"+";font-family:'IBM Plex Mono',monospace;color:var(--blue);font-size:20px}
+  .faq details[open] summary::after{content:"−"}
+  .faq details p{font-size:15px;color:var(--ink-soft);padding-bottom:20px;max-width:60ch}
+  footer{border-top:2px solid var(--ink);padding:24px 0 56px;margin-top:20px}
+  footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft)}
+  @media(max-width:860px){
+    .hero .wrap{grid-template-columns:1fr}
+    .stage{order:-1}
+    .roast{grid-template-columns:1fr;gap:8px}
+    .step-grid{grid-template-columns:1fr}
+    .step{border-right:none;border-bottom:2px solid var(--ink)}
+    .step:last-child{border-bottom:none}
+    .privacy-box{grid-template-columns:1fr}
+    .privacy-box>div{border-right:none;border-bottom:2px solid var(--ink)}
+    .privacy-box>div:last-child{border-bottom:none}
+  }
+</style>
+</head>
+<body>
+<nav>
+  <div class="wrap">
+    <div class="logo">FRANKLIN <i>AI</i></div>
+    <a class="nav-cta" href="analyse-flow.html">OBTENIR MON RAPPORT</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <div class="tag">Ton relevé, lu ligne par ligne</div>
+      <h1>Ta banque voit tout. Elle ne dit rien. <span class="hl">Franklin, lui, te raconte tout.</span></h1>
+      <p class="lede"><b>Franklin</b>, c'est ton relevé bancaire qui a pris vie. Il lit ton relevé ligne par ligne — un seul mois suffit, six c'est encore mieux — et te raconte ta propre vie avec l'humour d'un pote qui t'aime bien. Mais qui a tout vu.</p>
+      <div class="hero-ctas">
+        <a class="btn btn-primary" href="analyse-flow.html">FAIRE PARLER MON RELEVÉ →</a>
+        <a class="btn btn-ghost" href="#roasts">CE QU'IL OSE DIRE</a>
+      </div>
+    </div>
+    <div class="stage">
+      <!-- Mascotte animée : elle marche, la bulle la suit, les bras balancent -->
+      <div class="walker">
+      <div class="bubble"><span id="bubble-text"></span><span class="caret"></span></div>
+      <svg class="mascot-svg" id="franklin" width="215" height="292" viewBox="0 0 195 265">
+        <ellipse cx="97" cy="252" rx="62" ry="9" fill="rgba(20,22,31,.12)"/>
+        <g class="armL">
+          <path d="M40 150 C22 142 14 124 20 108" stroke="#14161f" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+          <circle cx="20" cy="104" r="7" fill="#14161f"/>
+        </g>
+        <g class="armR"><path d="M154 160 C172 158 180 172 170 184 C164 176 158 172 152 172" stroke="#14161f" stroke-width="4.5" fill="none" stroke-linecap="round"/></g>
+        <path d="M45 30 L149 30 L149 232 L141 224 L133 232 L125 224 L117 232 L109 224 L101 232 L93 224 L85 232 L77 224 L69 232 L61 224 L53 232 L45 224 Z" fill="#fffdf8" stroke="#14161f" stroke-width="3.5"/>
+        <path d="M45 30 L53 22 L61 30 L69 22 L77 30 L85 22 L93 30 L101 22 L109 30 L117 22 L125 30 L133 22 L141 30 L149 30" fill="#fffdf8" stroke="#14161f" stroke-width="3.5"/>
+        <path d="M60 44 H134 M60 54 H120" stroke="#c9c4b8" stroke-width="3"/>
+        <path d="M70 84 Q78 74 88 82" stroke="#14161f" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <path d="M108 86 Q116 83 124 86" stroke="#14161f" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <g class="eyes">
+          <circle cx="80" cy="98" r="5" fill="#14161f"/>
+          <circle cx="116" cy="98" r="5" fill="#14161f"/>
+        </g>
+        <path class="mouth-smile" d="M84 120 Q97 127 112 118" stroke="#14161f" stroke-width="3.6" fill="none" stroke-linecap="round"/>
+        <ellipse class="mouth-open" cx="98" cy="121" rx="8" ry="6" fill="#14161f"/>
+        <circle cx="70" cy="110" r="4.5" fill="#e6392e" opacity=".35"/>
+        <circle cx="126" cy="110" r="4.5" fill="#e6392e" opacity=".35"/>
+        <path d="M60 142 H134 M60 154 H134 M60 166 H110" stroke="#c9c4b8" stroke-width="3"/>
+        <rect x="58" y="149" width="80" height="10" fill="#9cc3ff" opacity=".9"/>
+        <path d="M56 186 H138" stroke="#14161f" stroke-width="2" stroke-dasharray="4 4"/>
+        <text x="60" y="205" font-family="IBM Plex Mono" font-weight="700" font-size="13" fill="#e6392e">TOTAL: AÏE.</text>
+        <g class="legL">
+          <path d="M78 232 L78 248" stroke="#14161f" stroke-width="4.5" stroke-linecap="round"/>
+          <path d="M78 248 L64 248" stroke="#14161f" stroke-width="4.5" stroke-linecap="round"/>
+        </g>
+        <g class="legR">
+          <path d="M116 232 L116 248" stroke="#14161f" stroke-width="4.5" stroke-linecap="round"/>
+          <path d="M116 248 L130 248" stroke="#14161f" stroke-width="4.5" stroke-linecap="round"/>
+        </g>
+      </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="roasts" id="roasts">
+  <div class="wrap">
+    <div class="sec-label">Morceaux choisis — rapport n°0847</div>
+    <h2>Franklin lit tes lignes.<br><span class="hl">Et il a des questions.</span></h2>
+    <p class="intro">Chaque dépense raconte une histoire, et Franklin adore les histoires. Il trouve tes endroits préférés, tes petites habitudes, tes grands classiques — et il t'en parle avec tendresse. Enfin, avec sa version de la tendresse. Extraits d'un vrai rapport (prénom changé) :</p>
+    <div class="roast-list">
+      <div class="roast">
+        <div class="lineitem"><b>LE BALTO — BAR ×23</b><span>en 6 mois · record : 4 fois la même semaine</span></div>
+        <div class="verdict">« Ce bar, tu l'aimes plus que <em>ta propre mère.</em> Et vu leur happy hour, honnêtement, on comprend. »</div>
+      </div>
+      <div class="roast">
+        <div class="lineitem"><b>UBER EATS ×43</b><span>dont 31 après 21h30</span></div>
+        <div class="verdict">« À ce stade, ton livreur fait partie de la famille. Pense à lui <em>pour les fêtes.</em> »</div>
+      </div>
+      <div class="roast">
+        <div class="lineitem"><b>BASIC-FIT — 34,99 €/mois</b><span>8 prélèvements · 0 trace de vie sur place</span></div>
+        <div class="verdict">« Huit mois d'abonnement, une carte de membre comme neuve. Il y a quelque chose de beau <em>dans cet optimisme.</em> »</div>
+      </div>
+      <div class="roast">
+        <div class="lineitem"><b>AMAZON — mardi, 23:47</b><span>un mini-projecteur</span></div>
+        <div class="verdict">« Le mini-projecteur est encore dans son carton. Mais lui au moins, il projette <em>de grandes choses.</em> »</div>
+      </div>
+      <div class="roast">
+        <div class="lineitem"><b>VIR LIVRET A — 50 €</b><span>le 1er du mois · re-viré le 12</span></div>
+        <div class="verdict">« Ton épargne fait l'aller-retour chaque mois, comme un pigeon voyageur. Au moins, <em>elle voyage.</em> »</div>
+      </div>
+    </div>
+    <div class="disclaimer">Taquin sur les habitudes, jamais méchant avec la personne. Chaque punchline est adossée à des chiffres vérifiés par du code — l'IA n'invente aucun montant.</div>
+  </div>
+</section>
+
+<section class="steps">
+  <div class="wrap">
+    <div class="sec-label">Comment ça marche</div>
+    <h2>Trois minutes de ta part.<br><span class="hl">Six mois de vérité en face.</span></h2>
+    <div class="step-grid">
+      <div class="step">
+        <div class="n">ÉTAPE 01</div>
+        <h3>Exporte ton relevé</h3>
+        <p>CSV ou PDF, depuis l'app de ta banque, en 1 minute. Un seul relevé suffit pour commencer — plus tu en donnes, plus Franklin a de matière. Toutes les banques françaises acceptées.</p>
+      </div>
+      <div class="step">
+        <div class="n">ÉTAPE 02</div>
+        <h3>Franklin lit tout</h3>
+        <p>Chaque transaction, chaque heure d'achat, chaque récurrence. L'aperçu gratuit tombe en 60 secondes. Le rapport complet en 5 minutes.</p>
+      </div>
+      <div class="step">
+        <div class="n">ÉTAPE 03</div>
+        <h3>Encaisse le portrait</h3>
+        <p>Ton archétype, tes punchlines personnalisées, tes fuites d'argent chiffrées, le verdict — et des cartes à partager (sans aucun montant, promis).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="pricing" id="prix">
+  <div class="wrap">
+    <div class="sec-label">Le prix</div>
+    <h2 style="text-align:left">Un rapport qui se rembourse <span class="hl">tout seul.</span></h2>
+    <div class="price-card">
+      <div class="amount">12,90<small> €</small></div>
+      <div class="per">Paiement unique · pas d'abonnement (ironique, on sait)</div>
+      <ul>
+        <li>Ton portrait financier complet, drôle et documenté, écrit pour toi seul</li>
+        <li>Tes fuites d'argent identifiées et chiffrées — en moyenne bien plus que le prix du rapport</li>
+        <li>Tes abonnements fantômes débusqués</li>
+        <li>4 cartes de verdict à partager, zéro donnée sensible</li>
+        <li>Aperçu gratuit avant de payer, sans carte bancaire</li>
+      </ul>
+      <!-- CTA → futur /analyse (tunnel d'upload). Poser l'event analytics "clic_prix" ici. -->
+      <a class="btn btn-primary" href="analyse-flow.html">FAIRE PARLER MON RELEVÉ →</a>
+    </div>
+  </div>
+</section>
+
+<section class="privacy">
+  <div class="wrap">
+    <div class="sec-label">La partie sérieuse</div>
+    <h2>Brutal sur tes habitudes.<br><span class="hl">Paranoïaque sur tes données.</span></h2>
+    <div class="privacy-box">
+      <div>
+        <h4>Supprimé, point.</h4>
+        <p>Ton fichier sert à écrire ton rapport, puis il est définitivement supprimé. Aucun relevé n'est stocké. Jamais.</p>
+      </div>
+      <div>
+        <h4>Jamais entraîné</h4>
+        <p>Tes données ne servent à entraîner aucun modèle d'IA et ne sont jamais revendues. À personne. Ce business vend des rapports, pas tes données.</p>
+      </div>
+      <div>
+        <h4>Rien dans les cartes</h4>
+        <p>Les cartes de partage ne contiennent aucun montant, aucun nom de banque, aucun chiffre sensible. Tu partages la vérité, pas ton salaire.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<section class="faq">
+  <div class="sec-label">Questions légitimes</div>
+  <details>
+    <summary>Vous voyez mes données bancaires ?</summary>
+    <p>Le fichier que tu uploades est traité automatiquement par l'IA, utilisé uniquement pour générer ton rapport, puis supprimé définitivement. Aucun humain ne lit ton relevé, rien n'est stocké, rien n'est revendu.</p>
+  </details>
+  <details>
+    <summary>C'est un conseil financier ?</summary>
+    <p>Non. Franklin est un miroir, pas un conseiller. C'est du divertissement doublé de lucidité : le rapport te montre tes comportements réels et tes fuites chiffrées, mais il ne recommande aucun produit financier et ne remplace pas un professionnel.</p>
+  </details>
+  <details>
+    <summary>Ma banque est compatible ?</summary>
+    <p>Si ta banque exporte un relevé en CSV ou PDF (elles le font toutes), c'est compatible. BNP, Crédit Agricole, SG, BoursoBank, Revolut, N26 et les autres.</p>
+  </details>
+  <details>
+    <summary>Et si le rapport est méchant ?</summary>
+    <p>Jamais. Franklin te taquine comme un pote qui a tout vu : il rit avec toi, pas de toi. Et quand il pique, c'est toujours avec les chiffres — jamais gratuitement.</p>
+  </details>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>FRANKLIN AI © 2026 — divertissement &amp; lucidité, pas un conseil financier</span>
+    <span>fichier supprimé après génération · rien n'est stocké · confidentialité · mentions légales</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  const phrases=[
+    "J'ai lu ton relevé. Beau roman.",
+    "Ton livreur te passe le bonjour.",
+    "9 abonnements. Toi inclus, ça fait 10.",
+    "Ta carte de sport est comme neuve.",
+    "Moi je dis rien. Je surligne.",
+    "Ton four me demande de tes nouvelles."
+  ];
+  const el=document.getElementById('bubble-text');
+  const svg=document.getElementById('franklin');
+  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let pi=0;
+  function typePhrase(){
+    const txt=phrases[pi];
+    pi=(pi+1)%phrases.length;
+    if(reduced){el.textContent=txt;setTimeout(typePhrase,3200);return}
+    let i=0;el.textContent='';svg.classList.add('talking');
+    const t=setInterval(()=>{
+      el.textContent=txt.slice(0,++i);
+      if(i>=txt.length){clearInterval(t);svg.classList.remove('talking');setTimeout(typePhrase,2600)}
+    },42);
+  }
+  typePhrase();
+})();
+</script>
+</body>
+</html>
