@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { getRecord, updateRecord } from "../../../lib/db";
+import { sendReportEmail } from "../../../lib/email";
 
 export const runtime = "nodejs";
 
@@ -31,7 +32,10 @@ export async function POST(req: Request) {
     const rid = event.data?.object?.metadata?.report_id;
     if (rid) {
       const rec = await getRecord(rid);
-      if (rec && rec.status === "preview_ready") await updateRecord(rid, { status: "paid" });
+      if (rec && rec.status === "preview_ready") {
+        await updateRecord(rid, { status: "paid" });
+        await sendReportEmail(rec.email, rec.prenom, `https://www.franklinai.fr/rapport/${rid}`);
+      }
     }
   }
   return NextResponse.json({ received: true });
