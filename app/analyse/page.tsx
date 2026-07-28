@@ -107,6 +107,10 @@ export default function Analyse() {
       )}
 
       {!preview && error && <p style={{ color: "#e6392e", fontFamily: mono }}>{error}</p>}
+
+      <p style={{ marginTop: 48, fontSize: 12, color: "#6b6f7e", fontFamily: mono }}>
+        <a href="/confidentialite" style={{ color: "inherit" }}>Confidentialité</a> · <a href="/cgv" style={{ color: "inherit" }}>CGV</a> · <a href="/mentions-legales" style={{ color: "inherit" }}>Mentions légales</a>
+      </p>
     </main>
   );
 }
