@@ -1,0 +1,90 @@
+/** Parsing vision universel : PDF -> VisionResult via l'API Claude.
+ * Contrôle de cohérence : somme des transactions vs totaux imprimés (retry 1x). */
+import type { VisionResult } from "./enrich";
+
+const API = "https://api.anthropic.com/v1/messages";
+const MODEL = process.env.FRANKLIN_MODEL || "claude-sonnet-5";
+
+const SCHEMA = {
+  type: "object",
+  properties: {
+    banque: { type: "string" },
+    titulaire: { type: "string" },
+    meta: { type: "object", properties: {
+      date_prec: { type: "string" }, solde_prec: { type: "number" },
+      date_nouv: { type: "string" }, solde_nouv: { type: "number" },
+      total_debits_imprime: { type: "number", description: "total débit IMPRIMÉ — recopié, jamais calculé" },
+      total_credits_imprime: { type: "number", description: "total crédit IMPRIMÉ — recopié, jamais calculé" },
+    }, required: ["date_prec", "solde_prec", "date_nouv", "solde_nouv"] },
+    transactions: { type: "array", items: { type: "object", properties: {
+      date: { type: "string", description: "date comptable dd/mm/yyyy" },
+      label: { type: "string" },
+      details: { type: "string", description: "lignes de détail concaténées (DE:, POUR:, MOTIF:, DATE:, lieu…)" },
+      amount: { type: "number", description: "montant positif, exactement comme imprimé" },
+      side: { type: "string", enum: ["debit", "credit"] },
+      op_date: { type: "string", description: "date d'opération dd/mm si différente" },
+      op_time: { type: "string", description: "heure hh:mm si présente" },
+    }, required: ["date", "label", "amount", "side"] } },
+  },
+  required: ["banque", "titulaire", "meta", "transactions"],
+};
+
+const SYSTEM = `Tu es un extracteur de relevés bancaires. Tu lis le document page par page et tu
+recopies CHAQUE écriture, dans l'ordre, sans exception : achats carte, virements, prélèvements,
+frais, commissions, intérêts, remises de chèque, retraits.
+
+Règles absolues :
+- Tu RECOPIES les montants tels qu'imprimés. Tu ne calcules rien, tu n'arrondis rien.
+- Une écriture = une entrée. Les lignes de détail sous une écriture vont dans \`details\`.
+- La colonne du montant détermine \`side\`. Vérifie la position visuellement.
+- SOLDE PRÉCÉDENT / NOUVEAU SOLDE / TOTAUX DES MOUVEMENTS ne sont PAS des transactions : meta.
+- N'ignore jamais une écriture au motif qu'elle est petite ou répétitive.`;
+
+async function call(pdfB64: string, extraMsg: string): Promise<VisionResult> {
+  const res = await fetch(API, {
+    method: "POST",
+    headers: { "x-api-key": process.env.ANTHROPIC_API_KEY!, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+    body: JSON.stringify({
+      model: MODEL, max_tokens: 32000, system: SYSTEM,
+      tools: [{ name: "releve", description: "Rend le relevé extrait.", input_schema: SCHEMA }],
+      tool_choice: { type: "tool", name: "releve" },
+      messages: [{ role: "user", content: [
+        { type: "document", source: { type: "base64", media_type: "application/pdf", data: pdfB64 } },
+        { type: "text", text: "Extrais l'intégralité de ce relevé." + extraMsg },
+      ] }],
+    }),
+  });
+  if (!res.ok) throw new Error(`API vision ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  const out = await res.json();
+  const tool = out.content.find((b: { type: string }) => b.type === "tool_use");
+  return tool.input as VisionResult;
+}
+
+function coherence(r: VisionResult): string[] {
+  const d = Math.round(r.transactions.filter((t) => t.side === "debit").reduce((s, t) => s + t.amount, 0) * 100) / 100;
+  const c = Math.round(r.transactions.filter((t) => t.side === "credit").reduce((s, t) => s + t.amount, 0) * 100) / 100;
+  const errs: string[] = [];
+  const { total_debits_imprime: td, total_credits_imprime: tc, solde_prec, solde_nouv } = r.meta;
+  if (td != null && Math.abs(d - td) > 0.01) errs.push(`débits extraits ${d} ≠ total imprimé ${td}`);
+  if (tc != null && Math.abs(c - tc) > 0.01) errs.push(`crédits extraits ${c} ≠ total imprimé ${tc}`);
+  if (td == null || tc == null) {
+    const attendu = Math.round((solde_prec + c - d) * 100) / 100;
+    if (Math.abs(attendu - solde_nouv) > 0.02) errs.push(`soldes incohérents: ${attendu} ≠ ${solde_nouv}`);
+  }
+  return errs;
+}
+
+export async function parsePdf(buf: Buffer): Promise<VisionResult> {
+  const b64 = buf.toString("base64");
+  let extra = "";
+  let last: VisionResult | null = null;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const r = await call(b64, extra);
+    const errs = coherence(r);
+    last = r;
+    if (!errs.length) return r;
+    extra = `\n\nATTENTION, ta première extraction était incohérente : ${errs.join(" ; ")}. ` +
+      `Tu as probablement oublié ou dupliqué des écritures, ou mal lu une colonne. Recommence intégralement.`;
+  }
+  throw new Error("extraction incohérente après 2 tentatives : " + coherence(last!).join(" ; "));
+}
