@@ -116,6 +116,16 @@ ${S.join("\n")}
 <footer><div class="wrap">
   <div>FRANKLIN AI · RAPPORT GÉNÉRÉ LE ${dateGen} · FICHIERS SOURCES SUPPRIMÉS APRÈS ANALYSE</div>
   <p class="disclaimer">Franklin est un divertissement lucide, pas un conseiller financier. Il lit, il raconte, il taquine. Il ne recommande rien, ne juge personne, et ne parle jamais de toi à qui que ce soit.</p>
+  <p class="disclaimer">Ce rapport s'efface automatiquement sous 30 jours.
+  <button id="del-btn" style="background:none;border:none;color:#e6392e;font-family:'IBM Plex Mono',monospace;font-size:12px;cursor:pointer;text-decoration:underline;padding:0">Supprimer mon rapport maintenant</button></p>
+  <p class="disclaimer"><a href="/mentions-legales" style="color:#6b6f7e">Mentions légales</a> · <a href="/confidentialite" style="color:#6b6f7e">Confidentialité</a> · <a href="/cgv" style="color:#6b6f7e">CGV</a></p>
 </div></footer>
+<script>
+document.getElementById('del-btn').addEventListener('click', async function () {
+  if (!confirm('Supprimer définitivement ce rapport ? Cette action est immédiate et irréversible.')) return;
+  const res = await fetch(window.location.pathname, { method: 'DELETE' });
+  if (res.ok) document.body.innerHTML = '<div style="max-width:520px;margin:120px auto;padding:24px;font-family:sans-serif;text-align:center"><h1 style="font-size:26px">Rapport supprimé.</h1><p>Franklin a tout oublié. C\\'était un plaisir.</p></div>';
+});
+</script>
 </body></html>`;
 }
