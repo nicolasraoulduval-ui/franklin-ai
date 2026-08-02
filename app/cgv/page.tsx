@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LegalLayout } from "../../lib/legal-layout";
+import { PRIX_TTC } from "../../lib/prix";
 
 export const metadata = { title: "Conditions générales de vente — Franklin AI" };
 
@@ -9,17 +10,18 @@ export default function CGV() {
       <h2>Le service</h2>
       <p>
         Franklin AI analyse le ou les relevés bancaires que tu fournis et génère : un aperçu gratuit (trois faits chiffrés)
-        puis, après paiement, un rapport complet humoristique accessible par lien privé et envoyé par email.
+        puis, après paiement, un rapport complet humoristique accessible par lien privé, envoyé par email et joint en PDF.
       </p>
       <h2>Prix et paiement</h2>
       <p>
-        Le rapport complet coûte <strong>12,90 € TTC</strong>, en paiement unique via Stripe. Aucun abonnement,
+        Le rapport complet coûte <strong>{PRIX_TTC}</strong>, en paiement unique via Stripe. Aucun abonnement,
         aucun prélèvement récurrent.
       </p>
       <h2>Livraison</h2>
       <p>
         Le rapport est généré immédiatement après confirmation du paiement (généralement en moins de deux minutes)
-        et reste accessible via ton lien privé pendant 30 jours.
+        et reste accessible via ton lien privé pendant 30 jours. Une copie PDF t&apos;est envoyée par email : elle
+        t&apos;appartient et reste lisible après l&apos;expiration du lien.
       </p>
       <h2>Droit de rétractation</h2>
       <p>
