@@ -26,42 +26,51 @@ const LIGNES: [string, string, 0 | 1 | 2][] = [
 ];
 
 const PHASES = [
-  { t: "LECTURE DES LIGNES", d: 9000, say: "Bon. Voyons voir ce qu'on a là." },
-  { t: "CATÉGORISATION", d: 9000, say: "Ça, c'est pas des courses. Ça, c'est un dîner." },
-  { t: "DÉTECTION DES RÉCURRENCES", d: 9000, say: "Tiens. Tous les 3 du mois, comme une horloge." },
-  { t: "CHASSE AUX FUITES", d: 10000, say: "Alors ça… ça va te faire mal." },
-  { t: "RÉDACTION DU PORTRAIT", d: 12000, say: "J'ai tout. Je te prépare ça bien." },
+  { t: "LECTURE DES LIGNES", say: "Bon. Voyons voir ce qu'on a là." },
+  { t: "CATÉGORISATION", say: "Ça, c'est pas des courses. Ça, c'est un dîner." },
+  { t: "DÉTECTION DES RÉCURRENCES", say: "Tiens. Tous les 3 du mois, comme une horloge." },
+  { t: "CHASSE AUX FUITES", say: "Alors ça… ça va te faire mal." },
+  { t: "RÉDACTION DU PORTRAIT", say: "J'ai tout. Je te prépare ça bien." },
 ];
+
+/* Progression : courbe asymptotique calculée sur le temps réel écoulé.
+   Elle décélère sans jamais atteindre 100 % — les derniers pourcents
+   n'arrivent qu'avec la réponse de l'API. Deux conséquences voulues :
+   la barre ne se bloque jamais en fin de course, et elle ne ment pas
+   en annonçant « terminé » alors que le serveur travaille encore.
+   TAU règle la vitesse : à 28 s on est à 63 %, à 60 s à 88 %, à 120 s à 99 %. */
+const TAU = 28;
+const PLAFOND = 96;
+const MAX_TX = 380; // ordre de grandeur d'un relevé de 6 mois
 
 export default function FranklinLoader() {
   const [lignes, setLignes] = useState<number[]>([]);
-  const [phase, setPhase] = useState(0);
-  const [n, setN] = useState(0);
+  const [avance, setAvance] = useState(0); // 0 → 1
   const i = useRef(0);
+  const depart = useRef(Date.now());
 
   // défilement du ticket
   useEffect(() => {
     const id = setInterval(() => {
       setLignes((prev) => [...prev, i.current++].slice(-11));
-      setN((p) => p + Math.floor(Math.random() * 4) + 2);
     }, 340);
     return () => clearInterval(id);
   }, []);
 
-  // enchaînement des phases (la dernière reste affichée si l'API est lente)
+  // progression recalculée depuis l'horloge : insensible au throttling des
+  // onglets en arrière-plan, contrairement à une chaîne de setTimeout.
   useEffect(() => {
-    const ids: ReturnType<typeof setTimeout>[] = [];
-    let t = 0;
-    PHASES.forEach((p, idx) => {
-      t += p.d;
-      ids.push(setTimeout(() => setPhase(idx + 1 < PHASES.length ? idx + 1 : idx), t));
-    });
-    return () => ids.forEach(clearTimeout);
+    const id = setInterval(() => {
+      const s = (Date.now() - depart.current) / 1000;
+      setAvance(1 - Math.exp(-s / TAU));
+    }, 200);
+    return () => clearInterval(id);
   }, []);
 
+  const phase = Math.min(PHASES.length - 1, Math.floor(avance / (1 / PHASES.length)));
   const p = PHASES[phase];
-  // la barre s'arrête à 92 % : les 8 % restants = arrivée réelle du rapport
-  const pct = Math.round(((phase + 1) / PHASES.length) * 92);
+  const pct = Math.min(PLAFOND, avance * 100);
+  const n = Math.round(avance * MAX_TX);
 
   return (
     <div className="fl-ov" role="status" aria-live="polite" aria-label="Analyse en cours">
@@ -104,12 +113,14 @@ export default function FranklinLoader() {
             <circle cx="128" cy="112" r="6" fill="#e6392e" opacity=".35" />
             <path d="M60 152 H134 M60 166 H134" stroke="#c9c4b8" strokeWidth="4" />
             <rect x="58" y="159" width="80" height="12" fill="#9cc3ff" opacity=".9" />
-            <text x="60" y="210" fontFamily="IBM Plex Mono" fontWeight="700" fontSize="17" fill="#e6392e">TOTAL: AÏE.</text>
+            {/* centré sur le ticket (x 45→149) et dimensionné pour ne pas déborder */}
+            <text x="97" y="207" textAnchor="middle" fontFamily="'IBM Plex Mono',ui-monospace,monospace"
+              fontWeight="700" fontSize="14" letterSpacing="-0.3" fill="#e6392e">TOTAL: AÏE.</text>
           </svg>
 
           <div className="fl-status">
             <div className="fl-phase">{p.t}</div>
-            <div className="fl-bar"><i style={{ width: `${pct}%` }} /></div>
+            <div className="fl-bar"><i style={{ width: `${pct.toFixed(1)}%` }} /></div>
             <div className="fl-count"><b>{n}</b> transactions lues</div>
           </div>
         </div>
@@ -182,7 +193,7 @@ const CSS = `
 .fl-phase{font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:700;
   letter-spacing:.11em;color:#2f4df0;margin-bottom:9px;min-height:17px}
 .fl-bar{height:7px;background:#fff;border:2px solid #14161f;border-radius:99px;overflow:hidden}
-.fl-bar i{display:block;height:100%;background:#2f4df0;transition:width .7s cubic-bezier(.4,0,.2,1)}
+.fl-bar i{display:block;height:100%;background:#2f4df0;transition:width .25s linear}
 .fl-count{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4a4f60;margin-top:9px}
 .fl-count b{color:#14161f;font-weight:700}
 
