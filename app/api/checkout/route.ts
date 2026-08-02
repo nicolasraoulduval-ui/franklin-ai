@@ -16,6 +16,16 @@ export async function POST(req: Request) {
   const origin = req.headers.get("origin") ?? "https://www.franklinai.fr";
   const body = new URLSearchParams({
     mode: "payment",
+    /* On fige les moyens de paiement sur "card" au lieu de laisser Stripe
+       piocher dans la config du Dashboard. Deux effets :
+       — Link n'est plus proposé (c'est un payment_method_type distinct, donc
+         l'exclure de cette liste le retire de la page) ;
+       — Apple Pay et Google Pay sont des portefeuilles rattachés à "card" :
+         Stripe les affiche en bouton express tout en haut dès que le
+         navigateur en déclare un. Sur Safari/iOS avec une carte dans Wallet,
+         Apple Pay devient donc l'option d'entrée, et le formulaire carte
+         classique reste disponible juste en dessous. */
+    "payment_method_types[0]": "card",
     "line_items[0][price_data][currency]": "eur",
     "line_items[0][price_data][unit_amount]": "1290",
     "line_items[0][price_data][product_data][name]": "Rapport Franklin — ton portrait financier",
