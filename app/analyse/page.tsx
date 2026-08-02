@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import FranklinLoader from "./FranklinLoader";
+import { PRIX_AFFICHE } from "../../lib/prix";
 
 const mono = "'IBM Plex Mono',monospace";
 const gab = "'Gabarito',sans-serif";
@@ -107,7 +108,7 @@ export default function Analyse() {
           <p style={{ color: "#6b6f7e" }}>Le portrait complet — archétype, mensonges, fuites, bulletin, verdict et 4 cartes à partager — t&apos;attend derrière.</p>
           <button onClick={payer} disabled={busy}
             style={{ width: "100%", padding: "16px", background: "#2f4df0", color: "#fff", border: "2px solid #14161f", fontFamily: mono, fontWeight: 700, fontSize: 16, cursor: "pointer" }}>
-            {busy ? "REDIRECTION…" : "DÉBLOQUER MON RAPPORT — 12,90 € →"}
+            {busy ? "REDIRECTION…" : `DÉBLOQUER MON RAPPORT — ${PRIX_AFFICHE} →`}
           </button>
           {error && <p style={{ color: "#e6392e", fontFamily: mono }}>{error}</p>}
         </>
