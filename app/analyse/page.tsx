@@ -1,5 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
+import FranklinLoader from "./FranklinLoader";
 
 const mono = "'IBM Plex Mono',monospace";
 const gab = "'Gabarito',sans-serif";
@@ -46,6 +47,8 @@ export default function Analyse() {
 
   return (
     <main style={{ maxWidth: 640, margin: "0 auto", padding: "48px 24px" }}>
+      {busy && !preview && <FranklinLoader />}
+
       <div style={{ fontFamily: gab, fontWeight: 900, fontSize: 20, marginBottom: 32 }}>
         FRANKLIN <span style={{ background: "#2f4df0", color: "#fff", padding: "1px 7px", borderRadius: 5, fontSize: 16 }}>AI</span>
       </div>
@@ -65,7 +68,7 @@ export default function Analyse() {
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => { e.preventDefault(); setFiles([...files, ...Array.from(e.dataTransfer.files).filter((f) => f.name.endsWith(".pdf") || f.name.endsWith(".csv"))]); }}
             style={{ border: "2px dashed #14161f", background: "#edf1fb", padding: "36px 20px", textAlign: "center", cursor: "pointer", margin: "22px 0", fontFamily: mono, fontSize: 14 }}>
-            {files.length ? files.map((f) => f.name).join(" · ") : "GLISSE TES RELEVÉS ICI (PDF) OU CLIQUE"}
+            {files.length ? files.map((f) => f.name).join(" · ") : "GLISSE TES RELEVÉS ICI (PDF OU CSV) OU CLIQUE"}
             <input ref={fileRef} type="file" accept=".pdf,.csv" multiple hidden
               onChange={(e) => setFiles([...files, ...Array.from(e.target.files ?? [])])} />
           </div>
@@ -79,8 +82,12 @@ export default function Analyse() {
 
           <button onClick={analyser} disabled={busy}
             style={{ marginTop: 18, width: "100%", padding: "16px", background: "#2f4df0", color: "#fff", border: "2px solid #14161f", fontFamily: mono, fontWeight: 700, fontSize: 16, cursor: "pointer" }}>
-            {busy ? "FRANKLIN LIT TON RELEVÉ… (1-2 MIN)" : "FAIRE PARLER MON RELEVÉ →"}
+            {busy ? "FRANKLIN LIT TON RELEVÉ…" : "FAIRE PARLER MON RELEVÉ →"}
           </button>
+
+          <p style={{ marginTop: 12, fontSize: 12, color: "#6b6f7e", fontFamily: mono, textAlign: "center" }}>
+            Aperçu gratuit — aucune carte bancaire demandée.
+          </p>
         </>
       )}
 
