@@ -29,6 +29,13 @@ export async function POST(req: Request) {
     "line_items[0][price_data][currency]": "eur",
     "line_items[0][price_data][unit_amount]": "1290",
     "line_items[0][price_data][product_data][name]": "Rapport Franklin — ton portrait financier",
+    "line_items[0][price_data][product_data][description]":
+      "Ton archétype, tes grands classiques, ce que ça te coûte vraiment, le verdict, " +
+      "et 4 cartes à partager (sans aucun montant).",
+    /* Stripe affiche cette image dans le récapitulatif : c'est le dernier écran
+       avant de payer, et il était vide. L'URL doit être publiquement accessible. */
+    "line_items[0][price_data][product_data][images][0]":
+      "https://www.franklinai.fr/checkout-franklin.png",
     "line_items[0][quantity]": "1",
     customer_email: rec.email,
     success_url: `${origin}/rapport/${report_id}?paid=1`,
