@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { PRIX_AFFICHE } from "../../lib/prix";
 
 function Inner() {
   const rid = useSearchParams().get("rid") ?? "";
@@ -15,10 +16,10 @@ function Inner() {
   return (
     <main style={{ maxWidth: 480, margin: "80px auto", padding: 24, textAlign: "center" }}>
       <h1 style={{ fontFamily: "'Gabarito',sans-serif", fontWeight: 900, fontSize: 32 }}>Paiement de test</h1>
-      <p>Stripe n&apos;est pas encore branché. Ce bouton simule un paiement réussi de <strong>12,90 €</strong>.</p>
+      <p>Stripe n&apos;est pas encore branché. Ce bouton simule un paiement réussi de <strong>{PRIX_AFFICHE}</strong>.</p>
       <button onClick={pay} disabled={busy}
         style={{ fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700, fontSize: 16, padding: "14px 28px", background: "#2f4df0", color: "#fff", border: "2px solid #14161f", cursor: "pointer" }}>
-        {busy ? "GÉNÉRATION DU RAPPORT…" : "PAYER 12,90 € (TEST) →"}
+        {busy ? "GÉNÉRATION DU RAPPORT…" : `PAYER ${PRIX_AFFICHE} (TEST) →`}
       </button>
       {busy && <p style={{ color: "#6b6f7e" }}>Franklin écrit ton rapport, ça prend une à deux minutes…</p>}
     </main>
