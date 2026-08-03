@@ -1,6 +1,11 @@
 /** Livraison du rapport par email (Resend). Silencieux si RESEND_API_KEY absent. */
 
-const FROM = process.env.EMAIL_FROM ?? "Franklin AI <franklin@amfmentor.com>";
+/* Expéditeur : un domaine que Franklin possède. Aucune boîte mail n'est
+   nécessaire pour ENVOYER — Resend demande seulement que le domaine soit
+   vérifié par DNS. En revanche, une réponse à cette adresse partirait dans le
+   vide : on redirige donc les réponses vers une adresse réellement relevée. */
+const FROM = process.env.EMAIL_FROM ?? "Franklin AI <franklin@franklinai.fr>";
+const REPONSE = process.env.EMAIL_REPLY_TO ?? "nicolas.raoulduval@gmail.com";
 
 export interface PieceJointe {
   filename: string;
@@ -45,7 +50,7 @@ export async function sendReportEmail(
   </div>
 </body></html>`;
 
-  const payload: Record<string, unknown> = { from: FROM, to: [to], subject, html, text };
+  const payload: Record<string, unknown> = { from: FROM, to: [to], subject, html, text, reply_to: REPONSE };
   if (pdf) {
     // Resend attend le contenu en base64. Buffer est disponible : runtime nodejs.
     payload.attachments = [{ filename: pdf.filename, content: Buffer.from(pdf.content).toString("base64") }];
