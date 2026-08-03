@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { getRecord, updateRecord } from "../../../lib/db";
-import { sendReportEmail } from "../../../lib/email";
 
 export const runtime = "nodejs";
 
 /** Webhook Stripe : checkout.session.completed -> commande payée.
- * Signature vérifiée avec STRIPE_WEBHOOK_SECRET (whsec_…). */
+ * Signature vérifiée avec STRIPE_WEBHOOK_SECRET (whsec_…).
+ *
+ * L'email de livraison n'est PLUS envoyé ici. Il part depuis
+ * /rapport/[token], au moment où le rapport est réellement écrit : c'est le
+ * seul endroit où l'on dispose de l'objet structuré nécessaire au PDF.
+ * Le webhook doit répondre à Stripe en quelques secondes ; générer le rapport
+ * ici (1 à 2 minutes) provoquerait un timeout et des relances en boucle. */
 export async function POST(req: Request) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   const payload = await req.text();
@@ -32,10 +37,7 @@ export async function POST(req: Request) {
     const rid = event.data?.object?.metadata?.report_id;
     if (rid) {
       const rec = await getRecord(rid);
-      if (rec && rec.status === "preview_ready") {
-        await updateRecord(rid, { status: "paid" });
-        await sendReportEmail(rec.email, rec.prenom, `https://www.franklinai.fr/rapport/${rid}`);
-      }
+      if (rec && rec.status === "preview_ready") await updateRecord(rid, { status: "paid" });
     }
   }
   return NextResponse.json({ received: true });
