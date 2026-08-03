@@ -14,7 +14,16 @@ export async function sendReportEmail(
   pdf?: PieceJointe,
 ): Promise<void> {
   const key = process.env.RESEND_API_KEY;
-  if (!key) return;
+  if (!key) {
+    /* Sans clé, on ne peut rien envoyer — mais un échec muet est pire qu'une
+       panne : le client a payé et n'a rien reçu, et rien n'apparaît nulle part.
+       On trace bruyamment pour que ça se voie dans les logs Vercel. */
+    console.error(
+      "EMAIL NON ENVOYÉ : RESEND_API_KEY absente. Destinataire :", to,
+      "| rapport :", reportUrl,
+    );
+    return;
+  }
 
   const mentionPdf = pdf
     ? "Ton rapport est aussi en pièce jointe, en PDF : le lien expire dans 30 jours, le PDF est à toi pour toujours."
