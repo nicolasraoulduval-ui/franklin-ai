@@ -2,6 +2,7 @@
 import { useRef, useState } from "react";
 import FranklinLoader from "./FranklinLoader";
 import { PRIX_AFFICHE } from "../../lib/prix";
+import PartageChat from "./PartageChat";
 
 const mono = "'IBM Plex Mono',monospace";
 const gab = "'Gabarito',sans-serif";
@@ -106,6 +107,19 @@ export default function Analyse() {
             ))}
           </div>
           <p style={{ color: "#6b6f7e" }}>Le portrait complet — archétype, mensonges, fuites, bulletin, verdict et 4 cartes à partager — t&apos;attend derrière.</p>
+
+          {/* Dernier écran avant la carte bancaire : on montre ce que deviennent
+              les cartes plutôt que de le décrire. */}
+          <div style={{ margin: "34px 0 26px" }}>
+            <h2 style={{ fontFamily: gab, fontWeight: 900, fontSize: 24, lineHeight: 1.1, marginBottom: 6 }}>
+              Le meilleur moment,<br />c&apos;est de le partager.
+            </h2>
+            <p style={{ color: "#6b6f7e", fontSize: 14.5, marginBottom: 18 }}>
+              Aucun montant, aucun nom de banque : tu partages le verdict, pas ton salaire.
+            </p>
+            <PartageChat />
+          </div>
+
           <button onClick={payer} disabled={busy}
             style={{ width: "100%", padding: "16px", background: "#2f4df0", color: "#fff", border: "2px solid #14161f", fontFamily: mono, fontWeight: 700, fontSize: 16, cursor: "pointer" }}>
             {busy ? "REDIRECTION…" : `DÉBLOQUER MON RAPPORT — ${PRIX_AFFICHE} →`}
