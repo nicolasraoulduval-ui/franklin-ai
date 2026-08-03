@@ -1,14 +1,24 @@
 "use client";
 import { useRef, useState } from "react";
 import FranklinLoader from "./FranklinLoader";
-import { PRIX_AFFICHE } from "../../lib/prix";
 import PartageChat from "./PartageChat";
+import TutoExport from "./TutoExport";
+import { PRIX_AFFICHE } from "../../lib/prix";
 
 const mono = "'IBM Plex Mono',monospace";
 const gab = "'Gabarito',sans-serif";
 
+/* Parcours en trois écrans avant le paiement.
+   1 · comment récupérer son relevé — le seul vrai frein à l'entrée
+   2 · ce que devient le rapport une fois partagé — la raison d'avancer
+   3 · l'import, puis l'aperçu gratuit, puis Stripe
+   Découper évite la page unique qui demande tout en même temps : à chaque
+   écran, une seule chose à comprendre. */
+const TOTAL = 3;
+
 export default function Analyse() {
   const fileRef = useRef<HTMLInputElement>(null);
+  const [etape, setEtape] = useState(1);
   const [files, setFiles] = useState<File[]>([]);
   const [email, setEmail] = useState("");
   const [prenom, setPrenom] = useState("");
@@ -16,6 +26,8 @@ export default function Analyse() {
   const [error, setError] = useState("");
   const [preview, setPreview] = useState<string[] | null>(null);
   const [rid, setRid] = useState("");
+
+  const aller = (n: number) => { setEtape(n); window.scrollTo({ top: 0 }); };
 
   const analyser = async () => {
     setError("");
@@ -32,6 +44,7 @@ export default function Analyse() {
       if (!r.ok) throw new Error(j.error ?? "erreur");
       setPreview(j.preview);
       setRid(j.report_id);
+      window.scrollTo({ top: 0 });
     } catch (e) {
       setError(e instanceof Error ? e.message : "analyse impossible");
     } finally {
@@ -47,15 +60,63 @@ export default function Analyse() {
     else { setError(j.error ?? "paiement indisponible"); setBusy(false); }
   };
 
+  const cta: React.CSSProperties = {
+    marginTop: 20, width: "100%", padding: "16px", background: "#2f4df0", color: "#fff",
+    border: "2px solid #14161f", fontFamily: mono, fontWeight: 700, fontSize: 16, cursor: "pointer",
+  };
+
   return (
-    <main style={{ maxWidth: 640, margin: "0 auto", padding: "48px 24px" }}>
+    <main style={{ maxWidth: 640, margin: "0 auto", padding: "40px 24px" }}>
       {busy && !preview && <FranklinLoader />}
 
-      <div style={{ fontFamily: gab, fontWeight: 900, fontSize: 20, marginBottom: 32 }}>
-        FRANKLIN <span style={{ background: "#2f4df0", color: "#fff", padding: "1px 7px", borderRadius: 5, fontSize: 16 }}>AI</span>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+        <div style={{ fontFamily: gab, fontWeight: 900, fontSize: 20 }}>
+          FRANKLIN <span style={{ background: "#2f4df0", color: "#fff", padding: "1px 7px", borderRadius: 5, fontSize: 16 }}>AI</span>
+        </div>
+        {!preview && (
+          <span style={{ fontFamily: mono, fontSize: 12.5, color: "#6b6f7e" }}>{etape} sur {TOTAL}</span>
+        )}
       </div>
 
+      {/* barre de progression : on sait toujours où on en est */}
       {!preview && (
+        <div style={{ height: 4, background: "#edf1fb", borderRadius: 99, marginBottom: 30, overflow: "hidden" }}>
+          <i style={{ display: "block", height: "100%", width: `${(etape / TOTAL) * 100}%`, background: "#2f4df0", transition: "width .35s ease" }} />
+        </div>
+      )}
+
+      {!preview && etape > 1 && (
+        <button onClick={() => aller(etape - 1)} style={{
+          background: "none", border: "none", cursor: "pointer", padding: 0, marginBottom: 14,
+          fontFamily: mono, fontSize: 13, color: "#6b6f7e",
+        }}>← retour</button>
+      )}
+
+      {/* ---------- 1 · comment récupérer son relevé ---------- */}
+      {!preview && etape === 1 && (
+        <>
+          <TutoExport />
+          <button onClick={() => aller(2)} style={cta}>J&apos;AI MON RELEVÉ →</button>
+        </>
+      )}
+
+      {/* ---------- 2 · ce que ça donne une fois partagé ---------- */}
+      {!preview && etape === 2 && (
+        <>
+          <h1 style={{ fontFamily: gab, fontWeight: 900, fontSize: 34, lineHeight: 1.05 }}>
+            Le meilleur moment,<br />c&apos;est de le partager.
+          </h1>
+          <p style={{ color: "#6b6f7e", margin: "10px 0 22px" }}>
+            Chaque rapport se termine par quatre cartes conçues pour la boucle de groupe.
+            Aucun montant, aucun nom de banque : tu partages le verdict, pas ton salaire.
+          </p>
+          <PartageChat />
+          <button onClick={() => aller(3)} style={cta}>À MOI MAINTENANT →</button>
+        </>
+      )}
+
+      {/* ---------- 3 · import ---------- */}
+      {!preview && etape === 3 && (
         <>
           <h1 style={{ fontFamily: gab, fontWeight: 900, fontSize: 38, lineHeight: 1.05 }}>
             Fais parler<br />ton relevé.
@@ -82,17 +143,18 @@ export default function Analyse() {
               style={{ flex: "2 1 220px", padding: "12px 14px", border: "2px solid #14161f", fontFamily: mono, fontSize: 14 }} />
           </div>
 
-          <button onClick={analyser} disabled={busy}
-            style={{ marginTop: 18, width: "100%", padding: "16px", background: "#2f4df0", color: "#fff", border: "2px solid #14161f", fontFamily: mono, fontWeight: 700, fontSize: 16, cursor: "pointer" }}>
+          <button onClick={analyser} disabled={busy} style={cta}>
             {busy ? "FRANKLIN LIT TON RELEVÉ…" : "FAIRE PARLER MON RELEVÉ →"}
           </button>
 
           <p style={{ marginTop: 12, fontSize: 12, color: "#6b6f7e", fontFamily: mono, textAlign: "center" }}>
             Aperçu gratuit — aucune carte bancaire demandée.
           </p>
+          {error && <p style={{ color: "#e6392e", fontFamily: mono }}>{error}</p>}
         </>
       )}
 
+      {/* ---------- aperçu gratuit, puis Stripe ---------- */}
       {preview && (
         <>
           <h1 style={{ fontFamily: gab, fontWeight: 900, fontSize: 34, lineHeight: 1.05 }}>
@@ -107,28 +169,12 @@ export default function Analyse() {
             ))}
           </div>
           <p style={{ color: "#6b6f7e" }}>Le portrait complet — archétype, mensonges, fuites, bulletin, verdict et 4 cartes à partager — t&apos;attend derrière.</p>
-
-          {/* Dernier écran avant la carte bancaire : on montre ce que deviennent
-              les cartes plutôt que de le décrire. */}
-          <div style={{ margin: "34px 0 26px" }}>
-            <h2 style={{ fontFamily: gab, fontWeight: 900, fontSize: 24, lineHeight: 1.1, marginBottom: 6 }}>
-              Le meilleur moment,<br />c&apos;est de le partager.
-            </h2>
-            <p style={{ color: "#6b6f7e", fontSize: 14.5, marginBottom: 18 }}>
-              Aucun montant, aucun nom de banque : tu partages le verdict, pas ton salaire.
-            </p>
-            <PartageChat />
-          </div>
-
-          <button onClick={payer} disabled={busy}
-            style={{ width: "100%", padding: "16px", background: "#2f4df0", color: "#fff", border: "2px solid #14161f", fontFamily: mono, fontWeight: 700, fontSize: 16, cursor: "pointer" }}>
+          <button onClick={payer} disabled={busy} style={cta}>
             {busy ? "REDIRECTION…" : `DÉBLOQUER MON RAPPORT — ${PRIX_AFFICHE} →`}
           </button>
           {error && <p style={{ color: "#e6392e", fontFamily: mono }}>{error}</p>}
         </>
       )}
-
-      {!preview && error && <p style={{ color: "#e6392e", fontFamily: mono }}>{error}</p>}
 
       <p style={{ marginTop: 48, fontSize: 12, color: "#6b6f7e", fontFamily: mono }}>
         <a href="/confidentialite" style={{ color: "inherit" }}>Confidentialité</a> · <a href="/cgv" style={{ color: "inherit" }}>CGV</a> · <a href="/mentions-legales" style={{ color: "inherit" }}>Mentions légales</a>
