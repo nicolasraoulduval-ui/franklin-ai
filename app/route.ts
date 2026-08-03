@@ -1,6 +1,6 @@
 import { LANDING_HTML } from "../lib/landing-html";
 import { PRIX_CENTIMES } from "../lib/prix";
-import { CSS_V2, STEPS_V2, SHARE_V2, EXPORT_V2, JS_V2 } from "../lib/sections";
+import { CSS_V2, STEPS_V2, EXPORT_V2, JS_V2 } from "../lib/sections";
 
 export const runtime = "nodejs";
 
@@ -42,11 +42,12 @@ html = supprimeSection(html, '<section class="pricing" id="prix">');
 // 2 · les trois étapes montrent ce qu'elles font, au lieu de le décrire
 html = remplaceSection(html, '<section class="steps">', STEPS_V2);
 
-// 3 · deux sections nouvelles, insérées après les étapes :
-//     le partage (seule boucle d'acquisition gratuite), puis la marche à
-//     suivre pour récupérer un relevé (seul vrai frein à l'entrée).
+// 3 · une section nouvelle après les étapes : la marche à suivre pour
+//     récupérer un relevé, seul vrai frein à l'entrée.
+//     Le partage a été déplacé sur l'écran d'aperçu, juste avant le paiement :
+//     il y sert d'argument de conversion plutôt que d'argument de découverte.
 const apresEtapes = html.indexOf("</section>", html.indexOf('<section class="steps">')) + "</section>".length;
-html = html.slice(0, apresEtapes) + "\n\n" + SHARE_V2 + "\n\n" + EXPORT_V2 + html.slice(apresEtapes);
+html = html.slice(0, apresEtapes) + "\n\n" + EXPORT_V2 + html.slice(apresEtapes);
 
 // 4 · CSS et JS des nouvelles sections
 html = html.replace("</style>", CSS_V2 + "\n</style>");
