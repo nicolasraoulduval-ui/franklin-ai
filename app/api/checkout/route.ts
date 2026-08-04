@@ -36,6 +36,11 @@ export async function POST(req: Request) {
     "line_items[0][price_data][product_data][images][0]":
       "https://www.franklinai.fr/checkout-franklin.png",
     "line_items[0][quantity]": "1",
+    /* Affiche « Ajouter un code promo » sur la page de paiement.
+       Les codes se créent dans le Dashboard Stripe (Produits → Coupons),
+       ce qui permet de faire un tarif de lancement sans toucher au prix
+       affiché sur le site — et de mesurer qui vient d'où. */
+    allow_promotion_codes: "true",
     customer_email: rec.email,
     success_url: `${origin}/rapport/${report_id}?paid=1`,
     cancel_url: `${origin}/analyse`,
