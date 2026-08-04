@@ -82,7 +82,8 @@ export function renderRapport(r: Rapport, stats: Stats, prenom: string, dateGen:
   }
 
   if (r.bulletin?.length) {
-    const rows = r.bulletin.map((b) => `<tr><td>${esc(b.matiere)}</td><td class="note${b.note.startsWith("A") ? " good" : b.note.startsWith("D") ? " bad" : ""}">${esc(b.note)}</td><td class="appr">${esc(b.appreciation)}</td></tr>`).join("");
+    const n20 = (s: string) => parseFloat(String(s).replace(",", "."));
+    const rows = r.bulletin.map((b) => `<tr><td>${esc(b.matiere)}</td><td class="note${n20(b.note) >= 14 ? " good" : n20(b.note) < 8 ? " bad" : ""}">${esc(b.note)}</td><td class="appr">${esc(b.appreciation)}</td></tr>`).join("");
     S.push(`<section><div class="wrap"><div class="kicker">Bulletin du semestre</div><h2>Conseil de classe.</h2>
       <table class="bulletin"><tr><th>MATIÈRE</th><th>NOTE</th><th>APPRÉCIATION DU RELEVÉ</th></tr>${rows}</table></div></section>`);
   }
@@ -93,6 +94,24 @@ export function renderRapport(r: Rapport, stats: Stats, prenom: string, dateGen:
   const classes = ["", " dark", " blue", ""];
   const cards = r.cartes.map((c, i) => `<div class="card${classes[i % 4]}"><div class="txt">${esc(c.texte)}</div><div class="foot"><span>FRANKLIN AI</span><span>franklinai.fr</span></div></div>`).join("");
   S.push(`<section><div class="wrap"><div class="kicker">Tes 4 cartes à partager</div><h2>Zéro montant. Zéro banque.<br>Juste la vérité.</h2><div class="cards">${cards}</div></div></section>`);
+
+  const ng = stats.note_gestion;
+  if (ng && ng.sous_notes?.length) {
+    const virg = (x: number) => String(x).replace(".", ",");
+    const lignes = ng.sous_notes
+      .map((s: any) => `<div class="row"><span>${esc(s.matiere)} — <i style="font-style:normal;opacity:.6">${esc(s.mesure)}</i></span><span>${virg(s.note)}/${s.sur}</span></div>`)
+      .join("");
+    const pluriel = ng.nb_criteres_retenus > 1 ? "s" : "";
+    S.push(`<section><div class="wrap"><div class="kicker">La note</div><h2>Gestion financière.</h2>
+      <div style="text-align:center;margin:30px 0 4px">
+        <span style="font-family:'Gabarito',sans-serif;font-weight:900;font-size:104px;line-height:1">${virg(ng.note)}</span><span style="font-family:'Gabarito',sans-serif;font-weight:900;font-size:38px;opacity:.3">/${ng.sur}</span>
+      </div>
+      <p style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 26px">${esc(ng.mention)}</p>
+      <div class="ticket">${lignes}</div>
+      ${paras(r.note_finale?.commentaire)}
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;opacity:.55;line-height:1.6;margin-top:20px">Note calculée par le moteur à partir de tes chiffres, sur ${ng.nb_criteres_retenus} critère${pluriel} réellement mesurable${pluriel}. Franklin ne l'a pas inventée, il l'a lue.</p>
+      </div></section>`);
+  }
 
   return `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
