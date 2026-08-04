@@ -73,6 +73,65 @@ function blocRetour(token: string): string {
 </div>`;
 }
 
+
+/* Barre d'actions du rapport, injectée en haut de page.
+ *
+ *  Deux gestes, et un seul compte vraiment : partager. Le partage est le seul
+ *  canal d'acquisition gratuit du produit — il mérite un bouton pleine largeur,
+ *  pas un lien discret. « En faire un autre » sert le cas du client satisfait
+ *  qui veut analyser d'autres mois, ou offrir le rapport à quelqu'un. */
+const BARRE = `
+<style>
+  #fr-barre{position:sticky;top:0;z-index:9998;background:#fbfbf8;
+    border-bottom:2px solid #14161f;padding:11px 20px;display:flex;
+    align-items:center;justify-content:space-between;gap:14px;
+    font-family:'IBM Plex Mono',ui-monospace,monospace}
+  #fr-barre .lg{font-family:'Gabarito',sans-serif;font-weight:900;font-size:17px;
+    color:#14161f;text-decoration:none;white-space:nowrap}
+  #fr-barre .lg i{background:#2f4df0;color:#fff;font-style:normal;padding:1px 6px;
+    border-radius:5px;margin-left:2px;font-size:13px}
+  #fr-barre a.autre{background:#14161f;color:#fff;text-decoration:none;font-weight:700;
+    font-size:12.5px;padding:10px 15px;border-radius:9px;white-space:nowrap}
+  #fr-partage{display:block;width:calc(100% - 40px);max-width:700px;margin:20px auto 0;
+    background:#fff;border:2.5px solid #14161f;border-radius:12px;padding:15px;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-weight:700;font-size:14px;
+    color:#14161f;cursor:pointer;box-shadow:4px 4px 0 rgba(20,22,31,.12);
+    transition:transform .12s,box-shadow .12s}
+  #fr-partage:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 rgba(20,22,31,.12)}
+  #fr-partage svg{vertical-align:-3px;margin-right:8px}
+  @media print{#fr-barre,#fr-partage{display:none !important}}
+  @media(max-width:560px){#fr-barre{padding:9px 14px}#fr-barre a.autre{font-size:11.5px;padding:9px 12px}}
+</style>
+<div id="fr-barre">
+  <a class="lg" href="/">FRANKLIN <i>AI</i></a>
+  <a class="autre" href="/analyse">EN FAIRE UN AUTRE →</a>
+</div>
+<button id="fr-partage" onclick="franklinPartager()">
+  <svg width="15" height="16" viewBox="0 0 15 16" fill="none" stroke="#14161f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7.5 10.5V1M4 4.5L7.5 1 11 4.5M1.5 10v4h12v-4"/>
+  </svg>PARTAGER LE RAPPORT
+</button>
+<script>
+function franklinPartager(){
+  var b = document.getElementById('fr-partage');
+  var d = { title: document.title || 'Mon rapport Franklin',
+            text: "Franklin a lu mon relevé bancaire. Voilà ce qu'il en pense.",
+            url: window.location.href };
+  /* Sur mobile, la feuille de partage native ouvre directement WhatsApp et
+     les messageries — c'est là que le rapport doit atterrir. Sur ordinateur
+     elle n'existe pas : on copie le lien et on le dit. */
+  if (navigator.share) {
+    navigator.share(d).catch(function(){});
+    return;
+  }
+  navigator.clipboard.writeText(d.url).then(function(){
+    var t = b.innerHTML;
+    b.innerHTML = 'LIEN COPIÉ — COLLE-LE OÙ TU VEUX';
+    setTimeout(function(){ b.innerHTML = t; }, 2200);
+  }).catch(function(){ window.prompt('Copie ce lien :', d.url); });
+}
+</script>`;
+
 const BOUTON_PDF = `
 <style>
   #fr-dl{position:fixed;right:22px;bottom:22px;z-index:9999;
@@ -135,9 +194,12 @@ export async function GET(req: Request, { params }: { params: { token: string } 
     }
   }
   const ajouts = blocRetour(params.token) + BOUTON_PDF;
-  const page = (rec.report_html ?? "").includes("</body>")
-    ? rec.report_html!.replace("</body>", ajouts + "</body>")
-    : (rec.report_html ?? "") + ajouts;
+  let page = rec.report_html ?? "";
+  // la barre et le bouton de partage vont en haut, juste après l'ouverture du corps
+  page = page.includes("<body")
+    ? page.replace(/(<body[^>]*>)/, "$1" + BARRE)
+    : BARRE + page;
+  page = page.includes("</body>") ? page.replace("</body>", ajouts + "</body>") : page + ajouts;
   return new Response(page, { headers: { "content-type": "text/html; charset=utf-8" } });
 }
 
