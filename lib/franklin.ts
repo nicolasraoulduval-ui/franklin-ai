@@ -13,6 +13,8 @@ export interface Rapport {
   toi_vs_toi?: { titre: string; gauche: { label: string; faits: string[] }; droite: { label: string; faits: string[] }; punchline?: string };
   bulletin?: Array<{ matiere: string; note: string; appreciation: string }>;
   verdict: { texte: string; derniere_ligne: string };
+  /** L'IA n'écrit que le commentaire : la note vient de lib/note.ts, jamais du modèle. */
+  note_finale?: { commentaire: string };
   cartes: Array<{ texte: string }>;
 }
 
@@ -26,9 +28,10 @@ const SCHEMA = {
     toi_vs_toi: { type: "object", properties: { titre: { type: "string" }, gauche: { type: "object", properties: { label: { type: "string" }, faits: { type: "array", items: { type: "string" } } }, required: ["label", "faits"] }, droite: { type: "object", properties: { label: { type: "string" }, faits: { type: "array", items: { type: "string" } } }, required: ["label", "faits"] }, punchline: { type: "string" } }, required: ["titre", "gauche", "droite"] },
     bulletin: { type: "array", minItems: 5, maxItems: 7, items: { type: "object", properties: { matiere: { type: "string" }, note: { type: "string" }, appreciation: { type: "string" } }, required: ["matiere", "note", "appreciation"] } },
     verdict: { type: "object", properties: { texte: { type: "string" }, derniere_ligne: { type: "string" } }, required: ["texte", "derniere_ligne"] },
+    note_finale: { type: "object", properties: { commentaire: { type: "string" } }, required: ["commentaire"] },
     cartes: { type: "array", minItems: 4, maxItems: 4, items: { type: "object", properties: { texte: { type: "string" } }, required: ["texte"] } },
   },
-  required: ["archetype", "mensonges", "signature", "verdict", "cartes"],
+  required: ["archetype", "mensonges", "signature", "verdict", "cartes", "note_finale"],
 };
 
 function collectNumbers(obj: unknown, acc: Set<number>): void {
@@ -43,7 +46,13 @@ function collectNumbers(obj: unknown, acc: Set<number>): void {
 const SMALL_OK = new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 15, 20, 100]);
 
 export function orphans(report: Rapport, allowed: Set<number>): string[] {
-  let text = JSON.stringify(report);
+  /* Les notes du bulletin sont des appréciations scolaires, pas des montants lus
+     sur le relevé : les passer au validateur ferait rejeter tous les rapports
+     (14 n'existe pas dans le stats.json). La note de gestion, elle, est calculée
+     par lib/note.ts et injectée dans le stats.json — donc déjà autorisée. */
+  const sansNotes = JSON.parse(JSON.stringify(report)) as Rapport;
+  if (Array.isArray(sansNotes.bulletin)) for (const b of sansNotes.bulletin) b.note = "";
+  let text = JSON.stringify(sansNotes);
   text = text.replace(/\d{4}-\d{2}-\d{2}/g, " ").replace(/\d{2}\/\d{2}(?:\/\d{4})?/g, " ")
              .replace(/\d{1,2}[hH]\d{2}/g, " ").replace(/\b20\d{2}\b/g, " ");
   // recoller les milliers quel que soit le séparateur invisible
