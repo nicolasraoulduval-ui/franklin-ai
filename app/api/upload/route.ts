@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { parsePdf } from "../../../lib/vision";
 import { enrich, selfPatternsFromHolder } from "../../../lib/enrich";
 import { computeStats } from "../../../lib/stats";
+import { calculerNote } from "../../../lib/note";
 import { buildPreview } from "../../../lib/preview";
 import { createRecord } from "../../../lib/db";
 import type { RawTransaction } from "../../../lib/stats";
@@ -86,6 +87,10 @@ export async function POST(req: Request) {
       );
 
     const stats = computeStats(allTx, { selfPatterns: selfPatternsFromHolder(titulaire) });
+    /* La note de gestion est calculée ici, par du code, jamais par le modèle.
+       En vivant dans le stats.json, ses chiffres deviennent automatiquement
+       autorisés par le validateur de chiffres orphelins. */
+    stats.note_gestion = calculerNote(stats);
     const preview = buildPreview(stats as Record<string, unknown>);
     // purge : les transactions sortent du scope ici ; seules les stats agrégées sont conservées
     const rec = await createRecord({ email, prenom, status: "preview_ready", stats, preview });
