@@ -5,6 +5,8 @@ import { computeStats } from "../../../lib/stats";
 import { calculerNote } from "../../../lib/note";
 import { buildPreview } from "../../../lib/preview";
 import { createRecord } from "../../../lib/db";
+import { ipDe, verifierDebit } from "../../../lib/ratelimit";
+import { journaliserErreur } from "../../../lib/evt";
 import type { RawTransaction } from "../../../lib/stats";
 
 export const runtime = "nodejs";
@@ -55,25 +57,57 @@ function diagnostic(e: unknown): { error: string; status: number } {
 }
 
 export async function POST(req: Request) {
-  try {
-    const form = await req.formData();
-    const email = String(form.get("email") ?? "").trim();
-    const prenom = String(form.get("prenom") ?? "").trim() || "toi";
-    const files = form.getAll("files").filter((f): f is File => f instanceof File);
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
-      return NextResponse.json({ error: "email invalide" }, { status: 400 });
-    if (!files.length || files.length > MAX_FILES)
-      return NextResponse.json({ error: `1 à ${MAX_FILES} fichiers PDF` }, { status: 400 });
+  /* Le plafond passe avant tout le reste : chaque analyse coûte deux minutes de
+     calcul et des appels facturés. Sans ça, un script trivial épuise le crédit
+     API en quelques minutes et met le service à genoux. */
+  const ip = ipDe(req);
+  const debit = await verifierDebit(ip);
+  if (!debit.autorise) {
+    return NextResponse.json(
+      { error: debit.message },
+      { status: 429, headers: { "retry-after": String(debit.reessayerDans ?? 3600) } },
+    );
+  }
 
+  /* La lecture du formulaire est isolée : si elle échoue, le problème est la
+     requête elle-même, pas le contenu d'un fichier. Auparavant l'exception
+     tombait dans diagnostic() et répondait « vérifie ton relevé » à quelqu'un
+     qui n'en avait envoyé aucun. */
+  let form: FormData;
+  try {
+    form = await req.formData();
+  } catch {
+    return NextResponse.json({ error: "requête illisible" }, { status: 400 });
+  }
+
+  const email = String(form.get("email") ?? "").trim();
+  const prenom = String(form.get("prenom") ?? "").trim() || "toi";
+  const files = form.getAll("files").filter((f): f is File => f instanceof File);
+
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
+    return NextResponse.json({ error: "email invalide" }, { status: 400 });
+  if (!files.length || files.length > MAX_FILES)
+    return NextResponse.json({ error: `1 à ${MAX_FILES} relevés PDF` }, { status: 400 });
+  for (const f of files)
+    if (f.size > MAX_SIZE)
+      return NextResponse.json({ error: `${f.name} dépasse 12 Mo` }, { status: 400 });
+
+  try {
+    /* Lecture en parallèle. En séquentiel, à 118 s mesurés par relevé, trois
+       fichiers dépassaient déjà maxDuration = 300 s — alors que la page d'accueil
+       encourage explicitement à en déposer six. Le client perdait cinq minutes
+       puis une erreur. En parallèle, six relevés tiennent dans le même budget
+       qu'un seul. */
+    const lus = await Promise.all(
+      files.map(async (f) => {
+        const buf = Buffer.from(await f.arrayBuffer());
+        return parsePdf(buf); // le fichier ne vit qu'ici — jamais écrit sur disque
+      }),
+    );
+
+    const titulaire = lus.find((r) => r.titulaire)?.titulaire ?? "";
     let allTx: RawTransaction[] = [];
-    let titulaire = "";
-    for (const f of files) {
-      if (f.size > MAX_SIZE) return NextResponse.json({ error: `${f.name} dépasse 12 Mo` }, { status: 400 });
-      const buf = Buffer.from(await f.arrayBuffer());
-      const vr = await parsePdf(buf); // le fichier ne vit qu'ici — jamais écrit sur disque
-      titulaire ||= vr.titulaire;
-      allTx = allTx.concat(enrich(vr));
-    }
+    for (const vr of lus) allTx = allTx.concat(enrich(vr));
 
     // aucune transaction : le PDF a été lu mais ne contient pas de relevé
     if (!allTx.length)
@@ -91,13 +125,15 @@ export async function POST(req: Request) {
        En vivant dans le stats.json, ses chiffres deviennent automatiquement
        autorisés par le validateur de chiffres orphelins. */
     stats.note_gestion = calculerNote(stats);
+
     const preview = buildPreview(stats as Record<string, unknown>);
     // purge : les transactions sortent du scope ici ; seules les stats agrégées sont conservées
     const rec = await createRecord({ email, prenom, status: "preview_ready", stats, preview });
     return NextResponse.json({ report_id: rec.token, preview, nb_releves: files.length });
   } catch (e) {
-    console.error("upload:", e);
     const { error, status } = diagnostic(e);
+    // 503 et 504 sont de notre côté : ils méritent une alerte, pas une ligne de log perdue.
+    await journaliserErreur("api/upload", e, status >= 500);
     return NextResponse.json({ error }, { status });
   }
 }
