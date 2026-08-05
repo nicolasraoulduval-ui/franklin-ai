@@ -1,9 +1,29 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import FranklinLoader from "./FranklinLoader";
 import PartageChat from "./PartageChat";
 import TutoExport from "./TutoExport";
 import { PRIX_AFFICHE } from "../../lib/prix";
+
+/* Suivi du tunnel — aucune donnée personnelle ne part d'ici : ni email, ni
+   prénom, ni nom de fichier, ni montant. Seulement un identifiant de session
+   aléatoire, régénéré à chaque onglet. Sans ces quatorze points de mesure, on
+   ignore où les gens décrochent. */
+function sessionId(): string {
+  if (typeof window === "undefined") return "srv";
+  const w = window as unknown as { __fr?: string };
+  return (w.__fr ??= Math.random().toString(36).slice(2, 12));
+}
+
+function suivre(nom: string, props?: Record<string, unknown>): void {
+  try {
+    const corps = JSON.stringify({ nom, session: sessionId(), props: props ?? {} });
+    if (navigator.sendBeacon) navigator.sendBeacon("/api/evt", new Blob([corps], { type: "application/json" }));
+    else void fetch("/api/evt", { method: "POST", headers: { "content-type": "application/json" }, body: corps, keepalive: true });
+  } catch {
+    /* le suivi ne doit jamais gêner le parcours */
+  }
+}
 
 const mono = "'IBM Plex Mono',monospace";
 const gab = "'Gabarito',sans-serif";
@@ -19,6 +39,7 @@ const TOTAL = 3;
 export default function Analyse() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [etape, setEtape] = useState(1);
+  useEffect(() => { suivre("analyse_etape_1"); }, []);
   const [files, setFiles] = useState<File[]>([]);
   const [email, setEmail] = useState("");
   const [prenom, setPrenom] = useState("");
@@ -27,13 +48,14 @@ export default function Analyse() {
   const [preview, setPreview] = useState<string[] | null>(null);
   const [rid, setRid] = useState("");
 
-  const aller = (n: number) => { setEtape(n); window.scrollTo({ top: 0 }); };
+  const aller = (n: number) => { setEtape(n); suivre("analyse_etape_" + n); window.scrollTo({ top: 0 }); };
 
   const analyser = async () => {
     setError("");
     if (!files.length) { setError("Ajoute au moins un relevé PDF."); return; }
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setError("Email invalide."); return; }
     setBusy(true);
+    suivre("upload_lance", { nb_releves: files.length });
     const fd = new FormData();
     files.forEach((f) => fd.append("files", f));
     fd.append("email", email);
@@ -42,10 +64,13 @@ export default function Analyse() {
       const r = await fetch("/api/upload", { method: "POST", body: fd });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error ?? "erreur");
+      suivre("upload_reussi", { nb_releves: files.length });
+      suivre("apercu_vu");
       setPreview(j.preview);
       setRid(j.report_id);
       window.scrollTo({ top: 0 });
     } catch (e) {
+      suivre("upload_echoue", { motif: e instanceof Error ? e.message.slice(0, 80) : "inconnu" });
       setError(e instanceof Error ? e.message : "analyse impossible");
     } finally {
       setBusy(false);
@@ -54,6 +79,7 @@ export default function Analyse() {
 
   const payer = async () => {
     setBusy(true);
+    suivre("checkout_clique");
     const r = await fetch("/api/checkout", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ report_id: rid }) });
     const j = await r.json();
     if (j.url) window.location.href = j.url;
@@ -129,11 +155,11 @@ export default function Analyse() {
           <div
             onClick={() => fileRef.current?.click()}
             onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => { e.preventDefault(); setFiles([...files, ...Array.from(e.dataTransfer.files).filter((f) => f.name.endsWith(".pdf") || f.name.endsWith(".csv"))]); }}
+            onDrop={(e) => { e.preventDefault(); setFiles([...files, ...Array.from(e.dataTransfer.files).filter((f) => f.name.toLowerCase().endsWith(".pdf"))]); }}
             style={{ border: "2px dashed #14161f", background: "#edf1fb", padding: "36px 20px", textAlign: "center", cursor: "pointer", margin: "22px 0", fontFamily: mono, fontSize: 14 }}>
-            {files.length ? files.map((f) => f.name).join(" · ") : "GLISSE TES RELEVÉS ICI (PDF OU CSV) OU CLIQUE"}
-            <input ref={fileRef} type="file" accept=".pdf,.csv" multiple hidden
-              onChange={(e) => setFiles([...files, ...Array.from(e.target.files ?? [])])} />
+            {files.length ? files.map((f) => f.name).join(" · ") : "GLISSE TES RELEVÉS PDF ICI OU CLIQUE"}
+            <input ref={fileRef} type="file" accept="application/pdf,.pdf" multiple hidden
+              onChange={(e) => { const f = Array.from(e.target.files ?? []); if (f.length) suivre("fichier_depose", { nb: f.length }); setFiles([...files, ...f]); }} />
           </div>
 
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
