@@ -80,7 +80,42 @@ function blocRetour(token: string): string {
  *  canal d'acquisition gratuit du produit — il mérite un bouton pleine largeur,
  *  pas un lien discret. « En faire un autre » sert le cas du client satisfait
  *  qui veut analyser d'autres mois, ou offrir le rapport à quelqu'un. */
-const BARRE = `
+/** Extrait les quatre cartes depuis le HTML déjà généré.
+ *  Elles sont écrites sans montant ni nom de banque : ce sont les seules
+ *  parties du rapport qu'on peut partager sans exposer quoi que ce soit. */
+function cartesDe(html: string): string[] {
+  const out: string[] = [];
+  const re = /<div class="card[^"]*"><div class="txt">([\s\S]*?)<\/div>/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html))) {
+    const t = m[1].replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&quot;/g, '"').trim();
+    if (t) out.push(t);
+  }
+  return out;
+}
+
+/* Barre d'actions du rapport, injectée en haut de page.
+ *
+ *  Il y a ici deux gestes très différents, et les confondre était une faute.
+ *
+ *  Partager le VERDICT envoie les quatre cartes : aucun montant, aucun nom de
+ *  banque. C'est exactement ce que la page /analyse promet — « tu partages le
+ *  verdict, pas ton salaire ». C'est aussi le seul canal d'acquisition gratuit
+ *  du produit, donc il mérite le bouton pleine largeur.
+ *
+ *  Partager le LIEN donne accès au rapport entier : salaire, loyer, virements,
+ *  découverts. C'est légitime, mais ça n'a rien à voir, et l'écran doit le dire
+ *  franchement plutôt que de laisser quelqu'un exposer ses revenus à quinze
+ *  personnes en croyant envoyer une blague.
+ *
+ *  Le lien est aussi affiché en clair : la livraison ne dépend plus de l'email.
+ *  Quelqu'un qui a payé repart avec son rapport même si l'envoi échoue ou finit
+ *  en indésirables. */
+function barre(cartes: string[], lien: string): string {
+  const texte = cartes.length
+    ? cartes.map((c) => "— " + c).join("\n") + "\n\nMon portrait financier par Franklin AI. franklinai.fr"
+    : "Franklin a lu mon relevé bancaire. Le verdict est sur franklinai.fr";
+  return `
 <style>
   #fr-barre{position:sticky;top:0;z-index:9998;background:#fbfbf8;
     border-bottom:2px solid #14161f;padding:11px 20px;display:flex;
@@ -92,45 +127,76 @@ const BARRE = `
     border-radius:5px;margin-left:2px;font-size:13px}
   #fr-barre a.autre{background:#14161f;color:#fff;text-decoration:none;font-weight:700;
     font-size:12.5px;padding:10px 15px;border-radius:9px;white-space:nowrap}
-  #fr-partage{display:block;width:calc(100% - 40px);max-width:700px;margin:20px auto 0;
-    background:#fff;border:2.5px solid #14161f;border-radius:12px;padding:15px;
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-weight:700;font-size:14px;
-    color:#14161f;cursor:pointer;box-shadow:4px 4px 0 rgba(20,22,31,.12);
-    transition:transform .12s,box-shadow .12s}
-  #fr-partage:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 rgba(20,22,31,.12)}
-  #fr-partage svg{vertical-align:-3px;margin-right:8px}
-  @media print{#fr-barre,#fr-partage{display:none !important}}
+  #fr-actions{width:calc(100% - 40px);max-width:700px;margin:22px auto 0;
+    font-family:'IBM Plex Mono',ui-monospace,monospace}
+  #fr-partage{display:block;width:100%;background:#2f4df0;color:#fff;
+    border:2.5px solid #14161f;border-radius:12px;padding:16px;
+    font-family:inherit;font-weight:700;font-size:14.5px;cursor:pointer;
+    box-shadow:4px 4px 0 #14161f;transition:transform .12s,box-shadow .12s}
+  #fr-partage:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 #14161f}
+  #fr-partage small{display:block;font-weight:400;font-size:11.5px;opacity:.82;margin-top:5px}
+  #fr-lien{margin-top:14px;border:2px dashed #14161f;border-radius:12px;
+    padding:14px 16px;background:#fffdf8}
+  #fr-lien .t{font-weight:700;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase}
+  #fr-lien .av{font-size:12px;line-height:1.55;color:#8a5a12;background:#fff5e0;
+    border-radius:7px;padding:8px 10px;margin:9px 0}
+  #fr-lien .r{display:flex;gap:8px}
+  #fr-lien input{flex:1;min-width:0;font-family:inherit;font-size:12px;
+    border:2px solid #14161f;border-radius:8px;padding:9px 10px;background:#fff;color:#14161f}
+  #fr-lien button{font-family:inherit;font-weight:700;font-size:12px;cursor:pointer;
+    border:2px solid #14161f;border-radius:8px;padding:9px 13px;background:#fff;color:#14161f;white-space:nowrap}
+  @media print{#fr-barre,#fr-actions{display:none !important}}
   @media(max-width:560px){#fr-barre{padding:9px 14px}#fr-barre a.autre{font-size:11.5px;padding:9px 12px}}
 </style>
 <div id="fr-barre">
   <a class="lg" href="/">FRANKLIN <i>AI</i></a>
   <a class="autre" href="/analyse">EN FAIRE UN AUTRE →</a>
 </div>
-<button id="fr-partage" onclick="franklinPartager()">
-  <svg width="15" height="16" viewBox="0 0 15 16" fill="none" stroke="#14161f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M7.5 10.5V1M4 4.5L7.5 1 11 4.5M1.5 10v4h12v-4"/>
-  </svg>PARTAGER LE RAPPORT
-</button>
+<div id="fr-actions">
+  <button id="fr-partage" onclick="franklinPartagerVerdict()">
+    PARTAGER LE VERDICT
+    <small>Les quatre cartes seulement. Aucun montant, aucun nom de banque.</small>
+  </button>
+  <div id="fr-lien">
+    <div class="t">Ton lien privé</div>
+    <div class="av"><strong>Ce lien montre tout</strong> : montants, revenus, découverts.
+      Ne l'envoie qu'à quelqu'un à qui tu montrerais ton relevé. Garde-le : c'est
+      lui qui te ramène à ton rapport.</div>
+    <div class="r">
+      <input id="fr-url" readonly value="${lien}" onclick="this.select()">
+      <button onclick="franklinCopierLien()">COPIER</button>
+    </div>
+  </div>
+</div>
 <script>
-function franklinPartager(){
-  var b = document.getElementById('fr-partage');
-  var d = { title: document.title || 'Mon rapport Franklin',
-            text: "Franklin a lu mon relevé bancaire. Voilà ce qu'il en pense.",
-            url: window.location.href };
-  /* Sur mobile, la feuille de partage native ouvre directement WhatsApp et
-     les messageries — c'est là que le rapport doit atterrir. Sur ordinateur
-     elle n'existe pas : on copie le lien et on le dit. */
-  if (navigator.share) {
-    navigator.share(d).catch(function(){});
-    return;
-  }
-  navigator.clipboard.writeText(d.url).then(function(){
-    var t = b.innerHTML;
-    b.innerHTML = 'LIEN COPIÉ — COLLE-LE OÙ TU VEUX';
-    setTimeout(function(){ b.innerHTML = t; }, 2200);
-  }).catch(function(){ window.prompt('Copie ce lien :', d.url); });
+var FR_CARTES = ${JSON.stringify(texte)};
+function frSuivre(n){try{var c=JSON.stringify({nom:n,session:'rapport'});
+  if(navigator.sendBeacon)navigator.sendBeacon('/api/evt',new Blob([c],{type:'application/json'}));
+  else fetch('/api/evt',{method:'POST',headers:{'content-type':'application/json'},body:c,keepalive:true});}catch(e){}}
+frSuivre('rapport_ouvert');
+
+function franklinPartagerVerdict(){
+  var b=document.getElementById('fr-partage');
+  frSuivre('partage_cartes');
+  /* Sur mobile la feuille native ouvre WhatsApp et les messageries — c'est là
+     que le verdict doit atterrir. Sur ordinateur elle n'existe pas : on copie. */
+  if(navigator.share){navigator.share({text:FR_CARTES}).catch(function(){});return;}
+  navigator.clipboard.writeText(FR_CARTES).then(function(){
+    var t=b.innerHTML;b.innerHTML='VERDICT COPIÉ — COLLE-LE OÙ TU VEUX';
+    setTimeout(function(){b.innerHTML=t;},2400);
+  }).catch(function(){window.prompt('Copie ton verdict :',FR_CARTES);});
+}
+
+function franklinCopierLien(){
+  var i=document.getElementById('fr-url');
+  frSuivre('lien_copie');
+  navigator.clipboard.writeText(i.value).then(function(){
+    var b=i.nextElementSibling;var t=b.textContent;b.textContent='COPIÉ';
+    setTimeout(function(){b.textContent=t;},1800);
+  }).catch(function(){i.select();});
 }
 </script>`;
+}
 
 const BOUTON_PDF = `
 <style>
@@ -193,11 +259,12 @@ export async function GET(req: Request, { params }: { params: { token: string } 
       console.error("pdf/email:", e);
     }
   }
+  const lien = `https://www.franklinai.fr/rapport/${params.token}`;
   const ajouts = blocRetour(params.token) + BOUTON_PDF;
   let page = rec.report_html ?? "";
   // la barre et le bouton de partage vont en haut, juste après l'ouverture du corps
   page = page.includes("<body")
-    ? page.replace(/(<body[^>]*>)/, "$1" + BARRE)
+    ? page.replace(/(<body[^>]*>)/, "$1" + barre(cartesDe(page), lien))
     : BARRE + page;
   page = page.includes("</body>") ? page.replace("</body>", ajouts + "</body>") : page + ajouts;
   return new Response(page, { headers: { "content-type": "text/html; charset=utf-8" } });
