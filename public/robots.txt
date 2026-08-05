@@ -1,1 +1,8 @@
+User-agent: *
+Allow: /
 
+# Le lien d'un rapport est à la fois son adresse et son mot de passe : il ne doit
+# jamais être indexé. Il suffirait qu'un client colle le sien une fois sur une page
+# publique pour que son portrait financier devienne consultable dans les résultats.
+Disallow: /rapport/
+Disallow: /api/
