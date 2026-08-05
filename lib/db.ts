@@ -62,6 +62,49 @@ export async function updateRecord(token: string, patch: Partial<ReportRecord>):
   }
 }
 
+/**
+ * Purge des données arrivées à échéance.
+ *
+ * Les CGV et la politique de confidentialité annoncent une suppression
+ * automatique à 30 jours. Jusqu'ici cette phrase était fausse : la requête
+ * n'existait que sous forme de commentaire dans supabase-schema.sql. Elle est
+ * désormais exécutée chaque nuit par le cron déclaré dans vercel.json.
+ *
+ * On purge aussi les compteurs de débit et les événements : ils n'ont aucune
+ * valeur passé quelques jours, et rien ne justifie de les garder.
+ */
+export async function purgerAncien(jours = 30): Promise<{ rapports: number; debit: number; evenements: number }> {
+  if (!SB_URL || !SB_KEY) {
+    const limite = Date.now() - jours * 86400000;
+    let n = 0;
+    for (const [t, r] of mem) {
+      if (r.created_at && new Date(r.created_at).getTime() < limite) { mem.delete(t); n++; }
+    }
+    return { rapports: n, debit: 0, evenements: 0 };
+  }
+
+  const avant = (j: number) => new Date(Date.now() - j * 86400000).toISOString();
+
+  const compte = async (table: string, colonne: string, seuil: string): Promise<number> => {
+    const res = await sb(`${table}?${colonne}=lt.${seuil}&select=*`, {
+      method: "DELETE",
+      headers: { Prefer: "return=representation" },
+    });
+    const lignes = (await res.json()) as unknown[];
+    return Array.isArray(lignes) ? lignes.length : 0;
+  };
+
+  const rapports = await compte(TABLE, "created_at", avant(jours));
+  // Les tables de service peuvent ne pas exister si la migration 2 n'a pas
+  // encore été jouée : leur absence ne doit pas faire échouer la purge des
+  // rapports, qui est la seule qui engage juridiquement.
+  let debit = 0, evenements = 0;
+  try { debit = await compte("franklin_rate", "at", avant(2)); } catch { /* table absente */ }
+  try { evenements = await compte("franklin_events", "at", avant(180)); } catch { /* table absente */ }
+
+  return { rapports, debit, evenements };
+}
+
 export async function deleteRecord(token: string): Promise<void> {
   if (SB_URL && SB_KEY) {
     await sb(`${TABLE}?token=eq.${encodeURIComponent(token)}`, { method: "DELETE" });
