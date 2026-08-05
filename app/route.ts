@@ -57,6 +57,42 @@ html = html.replace("</body>", JS_V2 + "\n</body>");
 //     sur la source unique au cas où il subsisterait une mention ailleurs
 html = html.split("12,90").join((PRIX_CENTIMES / 100).toFixed(2).replace(".", ","));
 
+// 6 · métadonnées sociales et favicon.
+//     La page d'accueil est servie en HTML brut : elle n'hérite pas du layout
+//     Next, et n'avait donc aucune balise Open Graph. Or le partage est le seul
+//     canal d'acquisition gratuit du produit : un lien collé dans WhatsApp
+//     s'affichait comme une URL nue, sans image ni titre.
+const SITE = "https://www.franklinai.fr";
+const TITRE = "Franklin AI — ton relevé bancaire a des choses à te dire";
+const DESC =
+  "Franklin lit ton relevé ligne par ligne et t'écrit le portrait financier le plus " +
+  "drôle et le plus juste qu'on t'ait jamais fait. Chaque chiffre est vérifié par du code.";
+
+const META = [
+  `<link rel="icon" href="${SITE}/favicon.svg">`,
+  `<link rel="canonical" href="${SITE}/">`,
+  `<meta name="description" content="${DESC}">`,
+  `<meta property="og:type" content="website">`,
+  `<meta property="og:locale" content="fr_FR">`,
+  `<meta property="og:site_name" content="Franklin AI">`,
+  `<meta property="og:title" content="${TITRE}">`,
+  `<meta property="og:description" content="${DESC}">`,
+  `<meta property="og:url" content="${SITE}/">`,
+  `<meta property="og:image" content="${SITE}/og.png">`,
+  `<meta property="og:image:width" content="1200">`,
+  `<meta property="og:image:height" content="630">`,
+  `<meta property="og:image:alt" content="Franklin AI — ta banque voit tout, elle ne dit rien">`,
+  `<meta name="twitter:card" content="summary_large_image">`,
+  `<meta name="twitter:title" content="${TITRE}">`,
+  `<meta name="twitter:description" content="${DESC}">`,
+  `<meta name="twitter:image" content="${SITE}/og.png">`,
+].join("\n");
+
+// La chaîne héritée porte déjà une balise description : on remplace la nôtre
+// à la place plutôt que d'en laisser deux qui se contredisent.
+html = html.replace(/<meta name="description"[^>]*>/i, "");
+html = html.replace("</head>", META + "\n</head>");
+
 export async function GET() {
   return new Response(html, { headers: { "content-type": "text/html; charset=utf-8" } });
 }
