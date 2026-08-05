@@ -265,7 +265,7 @@ export async function GET(req: Request, { params }: { params: { token: string } 
   // la barre et le bouton de partage vont en haut, juste après l'ouverture du corps
   page = page.includes("<body")
     ? page.replace(/(<body[^>]*>)/, "$1" + barre(cartesDe(page), lien))
-    : BARRE + page;
+    : barre(cartesDe(page), lien) + page;
   page = page.includes("</body>") ? page.replace("</body>", ajouts + "</body>") : page + ajouts;
   return new Response(page, { headers: { "content-type": "text/html; charset=utf-8" } });
 }
