@@ -1,6 +1,11 @@
 import { LANDING_HTML } from "../lib/landing-html";
 import { PRIX_CENTIMES } from "../lib/prix";
 import { CSS_V2, STEPS_V2, JS_V2 } from "../lib/sections";
+import {
+  CSS_SCHEMAS, SCHEMAS_LANDING,
+  CSS_BANDEAU, BANDEAU_EXTRAITS,
+  CSS_FINAL, CTA_FINAL,
+} from "../lib/schemas-landing";
 
 export const runtime = "nodejs";
 
@@ -42,14 +47,28 @@ html = supprimeSection(html, '<section class="pricing" id="prix">');
 // 2 · les trois étapes montrent ce qu'elles font, au lieu de le décrire
 html = remplaceSection(html, '<section class="steps">', STEPS_V2);
 
-// 3 · le tutoriel bancaire ne vit plus ici.
+// 3 · les schémas, à la place du tutoriel.
+//     La page expliquait ce que Franklin fait sans jamais le montrer. Quatre
+//     graphiques valent mieux qu'un paragraphe : le visiteur se reconnaît
+//     avant d'avoir payé, ce qui est exactement le but d'une page d'accueil.
+const apresEtapes = html.indexOf("</section>", html.indexOf('<section class="steps">')) + "</section>".length;
+html = html.slice(0, apresEtapes) + "\n\n" + SCHEMAS_LANDING + html.slice(apresEtapes);
+
+// 3 bis · le tutoriel bancaire ne vit plus ici.
 //     Montrer « voilà comment exporter ton relevé » à quelqu'un qui n'est pas
 //     encore convaincu, c'est afficher l'effort avant la récompense. Il est
 //     désormais uniquement à l'étape 1 du tunnel, une fois la décision prise.
 
 // 4 · CSS et JS des nouvelles sections
-html = html.replace("</style>", CSS_V2 + "\n</style>");
+html = html.replace("</style>", CSS_V2 + CSS_SCHEMAS + CSS_BANDEAU + CSS_FINAL + "\n</style>");
 html = html.replace("</body>", JS_V2 + "\n</body>");
+
+// 4 bis · le bandeau d'extraits puis le dernier appel, en toute fin de page.
+//         Quelqu'un qui arrive en bas a tout lu sans cliquer : lui répéter la
+//         promesse ne sert à rien, seule la curiosité peut encore le faire bouger.
+const finFooter = html.lastIndexOf("</footer>");
+const apresFooter = finFooter >= 0 ? finFooter + "</footer>".length : html.indexOf("</body>");
+html = html.slice(0, apresFooter) + "\n" + BANDEAU_EXTRAITS + "\n" + CTA_FINAL + html.slice(apresFooter);
 
 // 5 · le prix reste écrit en dur dans la chaîne héritée ; on le réaligne
 //     sur la source unique au cas où il subsisterait une mention ailleurs
