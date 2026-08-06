@@ -27,13 +27,13 @@ export const CSS_SCHEMAS = `
     padding:22px 24px 20px;box-shadow:5px 5px 0 rgba(20,22,31,.12);display:flex;flex-direction:column}
   .fs-t{font-family:'IBM Plex Mono',ui-monospace,monospace;font-weight:700;font-size:11.5px;
     letter-spacing:.09em;text-transform:uppercase;color:#6b6f7e;margin-bottom:16px;line-height:1.5}
-  .fs-viz{flex:1;display:flex;align-items:flex-end;justify-content:center;min-height:206px;padding-top:6px}
+  .fs-viz{flex:1;display:flex;align-items:flex-end;justify-content:center;height:206px;overflow:hidden}
   .fs-p{margin:16px 0 0;font-size:15.5px;line-height:1.5;font-weight:600}
   .fs-p span{color:#6b6f7e;font-weight:400}
 
   /* 1 · deux barres */
   .fs-duo{display:flex;align-items:flex-end;gap:46px}
-  .fs-col{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .fs-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:8px;height:100%}
   .fs-bar{width:56px;background:#2f4df0;border:2.5px solid #14161f;border-radius:5px 5px 0 0}
   .fs-bar.pale{background:#d8d8cf}
   .fs-val{font-family:'IBM Plex Mono',ui-monospace,monospace;font-weight:700;font-size:15px}
@@ -54,6 +54,17 @@ export const CSS_SCHEMAS = `
     font-family:'Gabarito',sans-serif;font-weight:900;font-size:22px}
   .fs-side{margin-left:20px;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;line-height:2}
   .fs-dot{display:inline-block;width:10px;height:10px;border-radius:3px;border:1.5px solid #14161f;margin-right:7px;vertical-align:-1px}
+
+  /* 3 · les deux tickets */
+  .fs-tickets{display:flex;align-items:center;gap:10px}
+  .fs-tick2{border:2.5px solid #14161f;border-radius:9px;background:#fffdf8;padding:12px 13px;
+    min-width:118px;box-shadow:3px 3px 0 rgba(20,22,31,.12)}
+  .fs-tick2.chaud{background:#edf1fb;border-color:#2f4df0}
+  .fs-tk-h{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.05em;color:#6b6f7e}
+  .fs-tk-m{font-family:'IBM Plex Mono',ui-monospace,monospace;font-weight:700;font-size:12px;margin:5px 0 7px}
+  .fs-tk-a{font-family:'Gabarito',sans-serif;font-weight:900;font-size:19px}
+  .fs-fleche{display:flex;flex-direction:column;align-items:center;font-size:19px;color:#14161f;line-height:1}
+  .fs-fleche span{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;color:#6b6f7e;margin-bottom:3px}
 
   /* 4 · cadran 24 h */
   .fs-day{width:100%;max-width:330px}
@@ -107,15 +118,23 @@ export const SCHEMAS_LANDING = `
       </div>
 
       <div class="fs-card">
-        <div class="fs-t">Destinataire n°1 de tes virements</div>
+        <div class="fs-t">Courses le samedi, livraison le dimanche</div>
         <div class="fs-viz" style="align-items:center">
-          <div class="fs-ring"><div class="fs-hole">TOI</div></div>
-          <div class="fs-side">
-            <div><span class="fs-dot" style="background:#2f4df0"></span>TOI-MÊME — 31</div>
-            <div><span class="fs-dot" style="background:#edf1fb"></span>LE RESTE DU MONDE — 7</div>
+          <div class="fs-tickets">
+            <div class="fs-tick2">
+              <div class="fs-tk-h">SAMEDI · 14:22</div>
+              <div class="fs-tk-m">INTERMARCHÉ</div>
+              <div class="fs-tk-a">62,40 €</div>
+            </div>
+            <div class="fs-fleche"><span>18 h</span>→</div>
+            <div class="fs-tick2 chaud">
+              <div class="fs-tk-h">DIMANCHE · 20:51</div>
+              <div class="fs-tk-m">UBER *EATS</div>
+              <div class="fs-tk-a">27,90 €</div>
+            </div>
           </div>
         </div>
-        <p class="fs-p">Tu es ton propre plus gros bénéficiaire.<br><span>Fidèle.</span></p>
+        <p class="fs-p">Le frigo est plein.<br><span>Le livreur aussi.</span></p>
       </div>
 
       <div class="fs-card">
