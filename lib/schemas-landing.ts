@@ -185,3 +185,49 @@ export const BANDEAU_EXTRAITS = `
   <div class="fb-band"><div class="fb-rail">${rail()}${rail()}</div></div>
   <p class="fb-note">Extraits de rapports Franklin · exemples, chiffres inventés</p>
 </section>`;
+
+
+/**
+ * Dernier écran de la page d'accueil.
+ *
+ * Quelqu'un qui arrive ici a tout lu et n'a toujours pas cliqué. Lui répéter
+ * la promesse ne sert à rien : il la connaît. Ce qui reste, c'est la curiosité
+ * — l'idée qu'il existe, dans son propre relevé, une ligne qu'il a oubliée et
+ * que quelqu'un d'autre va retrouver.
+ *
+ * D'où le format : une phrase, un bouton, rien d'autre. Pas de fonctionnalités,
+ * pas d'arguments, pas de réassurance en gras. La réassurance tient en une
+ * ligne sous le bouton, parce que c'est la dernière objection réelle : est-ce
+ * que ça va me coûter quelque chose avant que je voie ce que ça donne.
+ */
+export const CSS_FINAL = `
+  .ff-final{background:#edf1fb;border-top:2.5px solid #14161f;padding:82px 24px 90px;text-align:center}
+  .ff-final h2{font-family:'Gabarito',sans-serif;font-weight:900;font-size:clamp(30px,4.6vw,50px);
+    line-height:1.08;margin:0 auto;max-width:15ch}
+  .ff-final h2 em{font-style:normal;background:#9cc3ff;padding:0 .12em;box-decoration-break:clone;
+    -webkit-box-decoration-break:clone}
+  .ff-final .ff-cta{display:inline-block;margin-top:34px;background:#2f4df0;color:#fff;
+    text-decoration:none;border:2.5px solid #14161f;border-radius:14px;padding:19px 40px;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-weight:700;font-size:16px;
+    box-shadow:6px 6px 0 #14161f;transition:transform .12s,box-shadow .12s}
+  .ff-final .ff-cta:hover{transform:translate(3px,3px);box-shadow:3px 3px 0 #14161f}
+  .ff-final .ff-sub{margin:18px 0 0;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:12.5px;letter-spacing:.05em;color:#6b6f7e}
+  .ff-mascotte{display:block;margin:0 auto 26px;width:62px;height:auto}
+`;
+
+export const CTA_FINAL = `
+<section class="ff-final">
+  <svg class="ff-mascotte" viewBox="0 0 90 110" aria-hidden="true">
+    <path d="M12 8 l8 6 8-6 8 6 8-6 8 6 8-6 8 6 8-6 v88 l-8 6-8-6-8 6-8-6-8 6-8-6-8 6-8-6 z"
+          fill="#fffdf8" stroke="#14161f" stroke-width="4" stroke-linejoin="round"/>
+    <circle cx="34" cy="38" r="3.6" fill="#14161f"/>
+    <circle cx="56" cy="38" r="3.6" fill="#14161f"/>
+    <path d="M34 52 q11 9 22 0" stroke="#14161f" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+    <rect x="26" y="66" width="38" height="6" rx="2" fill="#2f4df0"/>
+    <rect x="26" y="76" width="26" height="4" rx="2" fill="#d8d8cf"/>
+  </svg>
+  <h2>Il y a dans ton relevé une ligne que tu as oubliée.<br><em>Franklin, lui, ne l'oubliera pas.</em></h2>
+  <a class="ff-cta" href="/analyse">FAIRE PARLER MON RELEVÉ →</a>
+  <p class="ff-sub">Aperçu gratuit · aucune carte bancaire demandée</p>
+</section>`;
