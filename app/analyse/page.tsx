@@ -134,7 +134,8 @@ export default function Analyse() {
           </h1>
           <p style={{ color: "#6b6f7e", margin: "10px 0 22px" }}>
             Chaque rapport se termine par quatre cartes conçues pour la boucle de groupe.
-            Aucun montant, aucun nom de banque : tu partages le verdict, pas ton salaire.
+            Un bouton en bas du rapport l&apos;envoie d&apos;un geste — le rapport entier,
+            montants compris. Choisis bien à qui.
           </p>
           <PartageChat />
           <button onClick={() => aller(3)} style={cta}>À MOI MAINTENANT →</button>
