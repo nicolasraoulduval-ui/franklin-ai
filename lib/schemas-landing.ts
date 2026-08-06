@@ -16,18 +16,23 @@
  */
 
 export const CSS_SCHEMAS = `
-  .fs-wrap{max-width:1100px;margin:0 auto;padding:0 24px}
+  .fs-wrap{max-width:1060px;margin:0 auto;padding:0 24px}
+  .fs-kicker{font-family:'IBM Plex Mono',ui-monospace,monospace;font-weight:700;font-size:12px;
+    letter-spacing:.12em;text-transform:uppercase;color:#2f4df0;margin-bottom:14px}
+  .fs-h2{font-family:'Gabarito',sans-serif;font-weight:900;font-size:clamp(28px,4vw,42px);
+    line-height:1.08;margin:0}
+  .fs-lede{max-width:62ch;margin:16px 0 0;font-size:16px;line-height:1.6;color:#4a4f60}
   .fs-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;margin-top:34px}
   .fs-card{border:2.5px solid #14161f;border-radius:16px;background:#fffdf8;
     padding:22px 24px 20px;box-shadow:5px 5px 0 rgba(20,22,31,.12);display:flex;flex-direction:column}
   .fs-t{font-family:'IBM Plex Mono',ui-monospace,monospace;font-weight:700;font-size:11.5px;
     letter-spacing:.09em;text-transform:uppercase;color:#6b6f7e;margin-bottom:16px;line-height:1.5}
-  .fs-viz{flex:1;display:flex;align-items:flex-end;justify-content:center;min-height:172px}
+  .fs-viz{flex:1;display:flex;align-items:flex-end;justify-content:center;min-height:206px;padding-top:6px}
   .fs-p{margin:16px 0 0;font-size:15.5px;line-height:1.5;font-weight:600}
   .fs-p span{color:#6b6f7e;font-weight:400}
 
   /* 1 · deux barres */
-  .fs-duo{display:flex;align-items:flex-end;gap:46px;height:172px}
+  .fs-duo{display:flex;align-items:flex-end;gap:46px}
   .fs-col{display:flex;flex-direction:column;align-items:center;gap:8px}
   .fs-bar{width:56px;background:#2f4df0;border:2.5px solid #14161f;border-radius:5px 5px 0 0}
   .fs-bar.pale{background:#d8d8cf}
@@ -35,7 +40,7 @@ export const CSS_SCHEMAS = `
   .fs-lab{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:#6b6f7e}
 
   /* 2 · six barres */
-  .fs-six{display:flex;align-items:flex-end;gap:11px;height:172px}
+  .fs-six{display:flex;align-items:flex-end;gap:11px}
   .fs-six .fs-bar{width:34px}
   .fs-bar.chaud{background:#e6392e}
   .fs-val.chaud{color:#e6392e}
@@ -71,9 +76,9 @@ const tick = (pct: number, nuit = false) =>
 export const SCHEMAS_LANDING = `
 <section class="schemas">
   <div class="fs-wrap">
-    <div class="kicker">Ce que ça donne</div>
-    <h2>Franklin ne commente pas.<br>Il démontre.</h2>
-    <p class="lede">Chaque rapport contient les schémas tirés de tes propres lignes.
+    <div class="fs-kicker">Ce que ça donne</div>
+    <h2 class="fs-h2">Franklin ne commente pas.<br>Il démontre.</h2>
+    <p class="fs-lede">Chaque rapport contient les schémas tirés de tes propres lignes.
        Ceux-ci sont des exemples : les chiffres sont inventés, la mécanique est
        exactement celle qui tournera sur ton relevé.</p>
 
@@ -82,8 +87,8 @@ export const SCHEMAS_LANDING = `
       <div class="fs-card">
         <div class="fs-t">Passages — restos &amp; bars vs courses</div>
         <div class="fs-viz"><div class="fs-duo">
-          <div class="fs-col"><div class="fs-val">64</div><div class="fs-bar" style="height:150px"></div><div class="fs-lab">RESTOS &amp; BARS</div></div>
-          <div class="fs-col"><div class="fs-val">7</div><div class="fs-bar pale" style="height:17px"></div><div class="fs-lab">COURSES</div></div>
+          <div class="fs-col"><div class="fs-val">64</div><div class="fs-bar" style="height:132px"></div><div class="fs-lab">RESTOS &amp; BARS</div></div>
+          <div class="fs-col"><div class="fs-val">7</div><div class="fs-bar pale" style="height:15px"></div><div class="fs-lab">COURSES</div></div>
         </div></div>
         <p class="fs-p">On la voit à peine.<br><span>Comme ta poêle.</span></p>
       </div>
@@ -91,12 +96,12 @@ export const SCHEMAS_LANDING = `
       <div class="fs-card">
         <div class="fs-t">% du salaire dépensé dans les 7 jours suivants</div>
         <div class="fs-viz"><div class="fs-six">
-          <div class="fs-col"><div class="fs-val">41</div><div class="fs-bar" style="height:74px"></div><div class="fs-lab">JANV</div></div>
-          <div class="fs-col"><div class="fs-val">52</div><div class="fs-bar" style="height:94px"></div><div class="fs-lab">FÉVR</div></div>
-          <div class="fs-col"><div class="fs-val">48</div><div class="fs-bar" style="height:86px"></div><div class="fs-lab">MARS</div></div>
-          <div class="fs-col"><div class="fs-val chaud">83</div><div class="fs-bar chaud" style="height:150px"></div><div class="fs-lab">AVR</div></div>
-          <div class="fs-col"><div class="fs-val">57</div><div class="fs-bar" style="height:103px"></div><div class="fs-lab">MAI</div></div>
-          <div class="fs-col"><div class="fs-val">61</div><div class="fs-bar" style="height:110px"></div><div class="fs-lab">JUIN</div></div>
+          <div class="fs-col"><div class="fs-val">41</div><div class="fs-bar" style="height:66px"></div><div class="fs-lab">JANV</div></div>
+          <div class="fs-col"><div class="fs-val">52</div><div class="fs-bar" style="height:83px"></div><div class="fs-lab">FÉVR</div></div>
+          <div class="fs-col"><div class="fs-val">48</div><div class="fs-bar" style="height:76px"></div><div class="fs-lab">MARS</div></div>
+          <div class="fs-col"><div class="fs-val chaud">83</div><div class="fs-bar chaud" style="height:132px"></div><div class="fs-lab">AVR</div></div>
+          <div class="fs-col"><div class="fs-val">57</div><div class="fs-bar" style="height:91px"></div><div class="fs-lab">MAI</div></div>
+          <div class="fs-col"><div class="fs-val">61</div><div class="fs-bar" style="height:97px"></div><div class="fs-lab">JUIN</div></div>
         </div></div>
         <p class="fs-p">Le 3 du mois, tu es riche.<br><span>Le 11, tu es toi.</span></p>
       </div>
