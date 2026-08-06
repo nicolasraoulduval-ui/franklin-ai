@@ -35,7 +35,7 @@ Vercel détecte Next.js automatiquement. Domaines déjà configurés (franklinai
 
 1. franklinai.fr → CTA → /analyse
 2. Uploader un relevé PDF + email → aperçu 3 vérités
-3. Payer 12,90 € (carte test Stripe `4242 4242 4242 4242` en mode test)
+3. Payer 6,90 € (carte test Stripe `4242 4242 4242 4242` en mode test)
 4. Retour → génération (~1 min) → rapport complet
 5. Vérifier la réception du webhook dans le dashboard Stripe
 
