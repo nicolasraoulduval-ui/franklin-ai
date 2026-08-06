@@ -130,3 +130,58 @@ export const SCHEMAS_LANDING = `
     </div>
   </div>
 </section>`;
+
+
+/**
+ * Bandeau défilant, tout en bas de la page d'accueil.
+ *
+ * Ce n'est pas un mur de témoignages, et c'est délibéré. Publier de faux avis
+ * de consommateurs est un délit en France (art. L121-4 11° du Code de la
+ * consommation, depuis la transposition de la directive Omnibus). Sur un
+ * produit dont l'argument central est « aucun chiffre n'est inventé », ce
+ * serait aussi le meilleur moyen de détruire la seule promesse qui le
+ * différencie.
+ *
+ * Ce qui défile ici, ce sont des extraits de rapports — c'est-à-dire le
+ * produit lui-même. C'est ce que les gens achètent réellement : pas la
+ * promesse qu'on a ri, mais la phrase qui fait rire. Le jour où il y aura de
+ * vraies réactions clients, elles remplaceront ces extraits ligne pour ligne :
+ * il suffira de changer le tableau EXTRAITS ci-dessous.
+ */
+const EXTRAITS = [
+  "43 commandes de livraison. Ce n'est plus un commerçant, c'est un correspondant.",
+  "Tu as viré de l'argent à 23h49 un mardi. Ton banquier dort. Pas toi.",
+  "Huit mois d'abonnement, une carte de membre comme neuve.",
+  "Le 3 du mois tu es riche. Le 11, tu es toi.",
+  "Ce bar, tu l'aimes plus que ta propre mère.",
+  "Tu es ton propre plus gros bénéficiaire. Fidèle.",
+  "Des courses le samedi, une livraison le dimanche. Deux dîners, un seul appétit.",
+  "Tu as payé pour ne pas cuisiner, puis payé pour ne pas y penser.",
+  "Ton compte n'est pas un compte, c'est une gare.",
+  "Tu regardes ton solde le 28 et tu te dis que le mois prochain sera différent.",
+];
+
+export const CSS_BANDEAU = `
+  .fb-band{border-top:2.5px solid #14161f;border-bottom:2.5px solid #14161f;
+    background:#14161f;padding:20px 0;overflow:hidden;position:relative}
+  .fb-note{text-align:center;font-family:'IBM Plex Mono',ui-monospace,monospace;
+    font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:#6b6f7e;
+    padding:14px 24px 0}
+  .fb-rail{display:flex;width:max-content;animation:fb-defile 46s linear infinite}
+  .fb-band:hover .fb-rail{animation-play-state:paused}
+  .fb-item{display:flex;align-items:center;gap:18px;padding:0 18px;white-space:nowrap;
+    font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:17px;color:#fffdf8}
+  .fb-item i{font-style:normal;color:#2f4df0;font-size:20px;line-height:1}
+  @keyframes fb-defile{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  @media(prefers-reduced-motion:reduce){.fb-rail{animation:none;flex-wrap:wrap;width:auto}}
+`;
+
+/* Le rail est dupliqué : la boucle se referme sans saut visible à mi-course. */
+const rail = () =>
+  EXTRAITS.map((t) => `<span class="fb-item"><i>◆</i>${t}</span>`).join("");
+
+export const BANDEAU_EXTRAITS = `
+<section class="bandeau">
+  <div class="fb-band"><div class="fb-rail">${rail()}${rail()}</div></div>
+  <p class="fb-note">Extraits de rapports Franklin · exemples, chiffres inventés</p>
+</section>`;
