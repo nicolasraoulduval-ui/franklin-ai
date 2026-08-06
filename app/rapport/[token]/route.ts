@@ -20,58 +20,6 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
  *  Surtout : la livraison ne dépend plus de l'email. Quelqu'un qui a payé
  *  repart avec son rapport même si l'envoi échoue ou finit en indésirables. */
 
-/* Collecte de la preuve sociale, injectée en bas du rapport.
- *
- *  Un client qui vient de lire son portrait est au maximum de sa réaction :
- *  c'est le seul moment où il répondra. Une heure plus tard, il ne répond
- *  plus. Sans ce bloc, dix ventes ne laissent aucune trace exploitable —
- *  ni témoignage, ni capture, ni signal sur le ton.
- *
- *  Volontairement sans base de données : deux liens mailto pré-remplis.
- *  Zéro infrastructure, donc rien qui puisse tomber en panne, et les
- *  réponses arrivent dans une boîte réellement relevée. */
-const CONTACT = process.env.EMAIL_REPLY_TO ?? "nicolas.raoulduval@gmail.com";
-
-function blocRetour(token: string): string {
-  const sujet = (r: string) => encodeURIComponent(`Franklin — ${r} (rapport ${token.slice(0, 6)})`);
-  const corpsRire = encodeURIComponent(
-    "Ce qui m'a fait rire :\n\n\n" +
-    "Ce qui m'a gêné (sois franc, c'est le plus utile) :\n\n\n" +
-    "— Tu peux citer ma réaction sur le site : oui / non\n"
-  );
-  const corpsGene = encodeURIComponent(
-    "Ce qui m'a gêné :\n\n\n" +
-    "Ce que Franklin aurait dû dire autrement :\n\n\n"
-  );
-  return `
-<style>
-  #fr-avis{max-width:720px;margin:56px auto 40px;padding:26px 28px;border:2.5px solid #14161f;
-    border-radius:14px;background:#fffdf8;box-shadow:4px 4px 0 rgba(20,22,31,.12);
-    font-family:'IBM Plex Sans',system-ui,sans-serif;color:#14161f}
-  #fr-avis h3{font-family:'Gabarito',sans-serif;font-weight:900;font-size:23px;margin:0 0 8px}
-  #fr-avis p{margin:0 0 18px;font-size:15px;line-height:1.6;color:#4a4f60}
-  #fr-avis .b{display:flex;gap:10px;flex-wrap:wrap}
-  #fr-avis a{font-family:'IBM Plex Mono',ui-monospace,monospace;font-weight:700;font-size:13px;
-    text-decoration:none;padding:12px 17px;border:2.5px solid #14161f;border-radius:10px}
-  #fr-avis .oui{background:#2f4df0;color:#fff}
-  #fr-avis .non{background:#fff;color:#14161f}
-  #fr-avis .capt{margin:20px 0 0;padding-top:16px;border-top:1px dashed rgba(20,22,31,.18);
-    font-size:13.5px;line-height:1.6;color:#4a4f60}
-  @media print{#fr-avis{display:none !important}}
-</style>
-<div id="fr-avis">
-  <h3>Alors ?</h3>
-  <p>Franklin apprend de ce qu'on lui dit. Deux minutes de ta part valent
-     plus que tout ce que je peux deviner tout seul.</p>
-  <div class="b">
-    <a class="oui" href="mailto:${CONTACT}?subject=${sujet("ça m'a fait rire")}&body=${corpsRire}">ÇA M'A FAIT RIRE</a>
-    <a class="non" href="mailto:${CONTACT}?subject=${sujet("ça m'a gêné")}&body=${corpsGene}">ÇA M'A GÊNÉ</a>
-  </div>
-  <p class="capt">Tu l'as envoyé à quelqu'un et ça a réagi ? Envoie-moi la capture de
-     la conversation. Avec ton accord, elle rejoindra le site — c'est la seule
-     preuve qui ne se fabrique pas.</p>
-</div>`;
-}
 
 
 /* Barre d'actions du rapport, injectée en haut de page.
@@ -220,7 +168,7 @@ export async function GET(req: Request, { params }: { params: { token: string } 
     }
   }
   const lien = `https://www.franklinai.fr/rapport/${params.token}`;
-  const ajouts = blocRetour(params.token) + partage(lien) + BOUTON_PDF;
+  const ajouts = partage(lien) + BOUTON_PDF;
   let page = rec.report_html ?? "";
   // la barre et le bouton de partage vont en haut, juste après l'ouverture du corps
   page = page.includes("<body")
