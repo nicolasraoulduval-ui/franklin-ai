@@ -261,6 +261,27 @@ export function computeStats(raw: RawTransaction[], config: StatsConfig) {
   const top = [...mc.entries()].sort((a, b) => b[1][1] - a[1][1]).slice(0, 15);
   stats.top_marchands = top.map(([m, v]) => ({ marchand: m, nb: v[0], total: C(v[1]) }));
 
+  // ---------- à qui tu vires le plus ----------
+  // Les virements vers soi-même sont exclus : ils sont déjà racontés par
+  // epargne_yoyo, et « ton premier bénéficiaire, c'est toi » n'est pas une
+  // révélation quand on regarde son propre livret.
+  const benef = new Map<string, [number, number]>();
+  for (const t of tx) {
+    if (t.side !== "debit" || t.type !== "vir_emis" || t.self_transfer) continue;
+    const qui = (t.beneficiaire ?? "").trim();
+    if (!qui) continue;
+    const val = benef.get(qui) ?? [0, 0];
+    val[0] += 1; val[1] += t.amount; benef.set(qui, val);
+  }
+  const classement = [...benef.entries()]
+    .map(([nom, v]) => ({ beneficiaire: nom, nb: v[0], total: C(v[1]) }))
+    .sort((a, b) => b.total - a.total);
+  stats.top_beneficiaires = {
+    nb_distincts: classement.length,
+    liste: classement.slice(0, 8),
+    premier: classement[0] ?? null,
+  };
+
   // ---------- épargne yo-yo ----------
   const outSelf = tx.filter((t) => t.type === "vir_emis" && t.self_transfer);
   const inSelf = tx.filter((t) => t.type === "vir_recu" && t.self_transfer);
