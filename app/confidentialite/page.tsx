@@ -19,7 +19,7 @@ export default function Confidentialite() {
       </ul>
       <h2>Ce que nous conservons</h2>
       <ul>
-        <li>Ton prénom et ton email (pour te livrer le rapport).</li>
+        <li>Ton prénom et ton email. Le rapport ne t&apos;est plus envoyé par courriel : il s&apos;affiche directement et se télécharge en PDF. L&apos;email ne sert qu&apos;à te recontacter si quelque chose se passe mal avec ta commande.</li>
         <li>Les statistiques agrégées et le rapport généré, derrière un lien privé.</li>
         <li>Le tout est <strong>supprimé automatiquement 30 jours</strong> après l&apos;analyse.</li>
       </ul>
@@ -31,7 +31,7 @@ export default function Confidentialite() {
       <h2>Sous-traitants</h2>
       <p>
         Anthropic (analyse par IA, données non utilisées pour l&apos;entraînement), Stripe (paiement — nous ne voyons jamais ta carte),
-        Supabase (stockage UE), Resend (envoi de l&apos;email de livraison), Vercel (hébergement). Aucune donnée n&apos;est vendue,
+        Supabase (stockage UE), Vercel (hébergement). Aucune donnée n&apos;est vendue,
         louée ou partagée avec qui que ce soit d&apos;autre. Pas de publicité, pas de trackers tiers.
       </p>
       <p>
