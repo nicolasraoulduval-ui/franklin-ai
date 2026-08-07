@@ -95,13 +95,21 @@ export async function parsePdf(buf: Buffer): Promise<VisionResult> {
   const b64 = buf.toString("base64");
   let extra = "";
   let last: VisionResult | null = null;
-  for (let attempt = 1; attempt <= 2; attempt++) {
+  /* Trois tentatives, plus deux. Une cliente a été refusée sur un export SG
+     parfaitement lisible : l'écart était de 28,90 € sur 3 698,51 € de débits,
+     soit une poignée de lignes ratées. La lecture est probabiliste, une seule
+     reprise ne suffit pas. Chaque tentative repart de zéro avec le détail de
+     l'écart précédent. */
+  for (let attempt = 1; attempt <= 3; attempt++) {
     const r = await call(b64, extra);
     const errs = coherence(r);
     last = r;
     if (!errs.length) return sansHeures(r);
-    extra = `\n\nATTENTION, ta première extraction était incohérente : ${errs.join(" ; ")}. ` +
-      `Tu as probablement oublié ou dupliqué des écritures, ou mal lu une colonne. Recommence intégralement.`;
+    extra = `\n\nATTENTION, ton extraction précédente (tentative ${attempt}) était incohérente : ${errs.join(" ; ")}. ` +
+      `Un écart de cette taille vient presque toujours de lignes oubliées, pas d'un mauvais montant. ` +
+      `Reprends le document page par page, compte les écritures de chaque page, et vérifie que tu ` +
+      `n'as sauté ni un report de solde, ni une ligne en bas de page, ni une écriture sur deux lignes. ` +
+      `Recommence intégralement.`;
   }
   throw new Error("extraction incohérente après 2 tentatives : " + coherence(last!).join(" ; "));
 }
