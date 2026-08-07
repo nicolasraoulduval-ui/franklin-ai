@@ -37,6 +37,24 @@ function diagnostic(e: unknown): { error: string; status: number } {
     };
   }
 
+  /* Extraction incohérente : le contrôle au centime a fait son travail, on a
+     refusé de livrer des chiffres faux. Mais c'est NOTRE lecture qui a échoué,
+     pas le document. Une cliente a reçu « vérifie que c'est bien un relevé
+     bancaire, pas une photo » alors qu'elle avait envoyé un export PDF
+     impeccable de sa banque. Elle n'est pas revenue. On ne renvoie plus jamais
+     quelqu'un à son fichier quand la faute est chez nous. */
+  if (/extraction incohérente|incoherente/.test(m)) {
+    return {
+      error:
+        "Franklin a lu ton relevé mais n'est pas arrivé à faire tomber les totaux au " +
+        "centime près — et il refuse de te livrer des chiffres dont il n'est pas sûr. " +
+        "Ça vient de nous, pas de ton document. Réessaie : il repart de zéro à chaque " +
+        "fois et y arrive le plus souvent. Si ça bloque encore, écris-nous, on le lira " +
+        "à la main.",
+      status: 503,
+    };
+  }
+
   // délai dépassé : gros relevé ou API lente
   if (/timeout|timed out|aborted|econnreset|fetch failed/.test(m)) {
     return {
