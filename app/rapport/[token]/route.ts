@@ -1,8 +1,6 @@
 import { getRecord, updateRecord, deleteRecord } from "../../../lib/db";
 import { generateRapport } from "../../../lib/franklin";
 import { renderRapport } from "../../../lib/render";
-import { rapportEnPdf } from "../../../lib/pdf";
-import { sendReportEmail } from "../../../lib/email";
 import { journaliserErreur } from "../../../lib/evt";
 
 export const runtime = "nodejs";
@@ -244,20 +242,6 @@ export async function POST(_req: Request, { params }: { params: { token: string 
     const html = renderRapport(rapport, rec.stats as Record<string, unknown>, rec.prenom, date);
     await updateRecord(params.token, { report_html: html, status: "ready" });
 
-    /* Le PDF ne peut être fabriqué qu'ici : c'est le seul endroit où l'on tient
-       encore l'objet Rapport structuré. L'email part donc d'ici aussi. Un échec
-       n'empêche pas la livraison : le client a déjà sa page. */
-    try {
-      const pdf = await rapportEnPdf(rapport, rec.prenom, date);
-      await sendReportEmail(
-        rec.email,
-        rec.prenom,
-        `https://www.franklinai.fr/rapport/${params.token}`,
-        { filename: `rapport-franklin-${rec.prenom.toLowerCase()}.pdf`, content: pdf },
-      );
-    } catch (e) {
-      await journaliserErreur("rapport/pdf-email", e, false);
-    }
     return new Response(null, { status: 204 });
   } catch (e) {
     /* Grave : le client a payé et n'a rien. Alerte immédiate. */
