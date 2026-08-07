@@ -36,6 +36,62 @@ function barChartSalaire(s: Stats): string {
   return `<div class="chart"><div class="chart-title mono">% DU SALAIRE DÉPENSÉ DANS LES 7 JOURS SUIVANTS</div><div class="bars6">${cols}</div></div>`;
 }
 
+/* À qui l'argent part vraiment.
+ *
+ *  Les virements vers soi-même sont déjà exclus par lib/stats.ts : « ton premier
+ *  bénéficiaire, c'est toi » n'apprend rien à quelqu'un qui regarde son livret.
+ *  Ce qui surprend, c'est de voir le classement des autres — et l'écart entre le
+ *  premier et le reste.
+ *
+ *  La chute se calcule : selon que quelqu'un capte la majorité ou que tout est
+ *  réparti, ce n'est pas la même phrase. Une légende écrite d'avance finit
+ *  toujours par contredire le dessin de quelqu'un. */
+function beneficiaires(s: Stats): string {
+  const b = s.top_beneficiaires;
+  const liste: Array<{ beneficiaire: string; nb: number; total: number }> = b?.liste ?? [];
+  if (liste.length < 2) return "";
+
+  const top = liste.slice(0, 5);
+  const mx = Math.max(...top.map((x) => x.total), 1);
+  const somme = liste.reduce((acc, x) => acc + x.total, 0);
+  const part = Math.round((100 * top[0].total) / Math.max(somme, 1));
+
+  const eur = (x: number) =>
+    x.toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d),)/g, "\u202f") + "\u00a0€";
+  const court = (n: string) => (n.length > 22 ? n.slice(0, 21) + "…" : n);
+
+  const rangs = top
+    .map(
+      (x) => `<div class="bn-r">
+        <div class="bn-n mono">${esc(court(x.beneficiaire))}</div>
+        <div class="bn-b"><i style="width:${Math.max(6, Math.round((100 * x.total) / mx))}%"></i></div>
+        <div class="bn-m mono">${eur(x.total)}<small> · ${x.nb}×</small></div>
+      </div>`,
+    )
+    .join("");
+
+  const chute =
+    part >= 60
+      ? `${esc(court(top[0].beneficiaire))} capte ${part} % de ce que tu envoies. Les autres se partagent le reste.`
+      : liste.length >= 6
+        ? `${liste.length} destinataires différents. Tu ne vires pas, tu distribues.`
+        : "personne ne domine vraiment. l'argent circule, sans favori déclaré.";
+
+  return `<div class="chart"><div class="chart-title mono">À QUI TU VIRES LE PLUS</div>
+    <style>
+      .bn-r{display:flex;align-items:center;gap:12px;margin:9px 0}
+      .bn-n{flex:0 0 150px;font-size:11.5px;text-align:right;overflow:hidden;white-space:nowrap}
+      .bn-b{flex:1;height:22px;border:2px solid #14161f;border-radius:5px;background:#fffdf8;overflow:hidden}
+      .bn-b i{display:block;height:100%;background:#2f4df0}
+      .bn-m{flex:0 0 118px;font-size:12px;font-weight:700}
+      .bn-m small{font-weight:400;opacity:.55}
+      .bn-c{margin-top:12px;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;color:#6b6f7e}
+      @media(max-width:560px){.bn-n{flex-basis:96px;font-size:10px}.bn-m{flex-basis:92px;font-size:11px}}
+    </style>
+    ${rangs}
+    <div class="bn-c">${esc(chute)}</div></div>`;
+}
+
 function donut(s: Stats): string {
   const nSelf = s.epargne_yoyo?.sorties_vers_soi?.nb ?? 0;
   const nOther = s.depenses_par_categorie?.virement_emis?.nb ?? 0;
@@ -76,7 +132,7 @@ export function renderRapport(r: Rapport, stats: Stats, prenom: string, dateGen:
 
   S.push(`<section><div class="wrap"><div class="kicker">Ta signature</div><h2>${esc(r.signature.titre)}</h2>${paras(r.signature.texte)}</div></section>`);
 
-  const charts = barChart2(stats) + barChartSalaire(stats) + donut(stats);
+  const charts = barChart2(stats) + barChartSalaire(stats) + beneficiaires(stats) + donut(stats);
   if (charts.trim())
     S.push(`<section><div class="wrap"><div class="kicker">Les schémas</div><h2>La science confirme.</h2>${charts}</div></section>`);
 
