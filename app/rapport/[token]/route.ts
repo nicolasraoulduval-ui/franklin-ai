@@ -3,6 +3,7 @@ import { generateRapport } from "../../../lib/franklin";
 import { renderRapport } from "../../../lib/render";
 import { rapportEnPdf } from "../../../lib/pdf";
 import { sendReportEmail } from "../../../lib/email";
+import { journaliserErreur } from "../../../lib/evt";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -142,31 +143,16 @@ export async function GET(req: Request, { params }: { params: { token: string } 
   }
   if (rec.status === "preview_ready") return new Response("Rapport non payé.", { status: 402 });
 
-  if (!rec.report_html) {
-    const rapport = await generateRapport(rec.stats, rec.prenom);
-    const date = new Date().toLocaleDateString("fr-FR");
-    const html = renderRapport(rapport, rec.stats as Record<string, unknown>, rec.prenom, date);
-    await updateRecord(params.token, { report_html: html, status: "ready" });
-    rec.report_html = html;
+  /* Le rapport n'existe pas encore. On NE le fabrique PAS ici.
+     Avant, le GET attendait le webhook (jusqu'à 10 s de sommeil), puis appelait
+     le modèle (30 à 90 s), puis fabriquait le PDF, puis envoyait l'email — et
+     seulement là il répondait. Le client venait de payer et fixait une page
+     blanche pendant une à deux minutes, sans le moindre signe de vie. C'est le
+     moment le plus fragile du produit : il vient de donner son argent.
+     On renvoie donc immédiatement un écran d'attente, qui déclenche lui-même la
+     fabrication et recharge quand elle est finie. */
+  if (!rec.report_html) return new Response(ATTENTE, { headers: { "content-type": "text/html; charset=utf-8" } });
 
-    /* Le PDF ne peut être fabriqué qu'ici : c'est le seul endroit où l'on tient
-       encore l'objet Rapport structuré (seul le HTML est stocké ensuite).
-       On envoie donc l'email de livraison à ce moment, avec la pièce jointe —
-       un seul email, et il contient le rapport. Ce bloc ne s'exécute qu'une
-       fois, puisqu'il est gardé par l'absence de report_html.
-       Si l'envoi échoue, on ne bloque pas l'affichage : le client a sa page. */
-    try {
-      const pdf = await rapportEnPdf(rapport, rec.prenom, date);
-      await sendReportEmail(
-        rec.email,
-        rec.prenom,
-        `https://www.franklinai.fr/rapport/${params.token}`,
-        { filename: `rapport-franklin-${rec.prenom.toLowerCase()}.pdf`, content: pdf },
-      );
-    } catch (e) {
-      console.error("pdf/email:", e);
-    }
-  }
   const lien = `https://www.franklinai.fr/rapport/${params.token}`;
   const ajouts = partage(lien) + BOUTON_PDF;
   let page = rec.report_html ?? "";
@@ -181,4 +167,101 @@ export async function GET(req: Request, { params }: { params: { token: string } 
 export async function DELETE(_req: Request, { params }: { params: { token: string } }) {
   await deleteRecord(params.token);
   return new Response(null, { status: 204 });
+}
+
+/** Écran d'attente, servi instantanément après le paiement.
+ *
+ *  Il déclenche lui-même la fabrication via un POST sur la même adresse, puis
+ *  recharge la page. Une seule requête, pas de sondage : le navigateur tient la
+ *  connexion ouverte pendant que Franklin écrit, et l'animation occupe l'attente.
+ *  Le texte change toutes les quatre secondes pour montrer que rien n'est figé. */
+const ATTENTE = `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Franklin écrit ton rapport…</title>
+<link rel="icon" href="/favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@700;900&family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;min-height:100vh;background:#edf1fb;color:#14161f;display:flex;
+    align-items:center;justify-content:center;padding:24px;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;text-align:center}
+  .b{max-width:460px}
+  svg{width:96px;height:auto;margin-bottom:26px;animation:fl 2.4s ease-in-out infinite}
+  @keyframes fl{0%,100%{transform:translateY(0) rotate(-1.5deg)}50%{transform:translateY(-11px) rotate(1.5deg)}}
+  h1{font-family:'Gabarito',sans-serif;font-weight:900;font-size:30px;line-height:1.12;margin:0 0 14px}
+  p{font-size:13.5px;line-height:1.7;color:#4a4f60;margin:0}
+  .j{min-height:3.4em;display:flex;align-items:center;justify-content:center}
+  .barre{margin:24px auto 0;width:210px;height:7px;border:2px solid #14161f;border-radius:99px;overflow:hidden;background:#fff}
+  .barre i{display:block;height:100%;width:35%;background:#2f4df0;animation:av 1.5s ease-in-out infinite}
+  @keyframes av{0%{margin-left:-35%}100%{margin-left:100%}}
+  .pied{margin-top:26px;font-size:11.5px;color:#6b6f7e;line-height:1.6}
+</style></head><body>
+<div class="b">
+  <svg viewBox="0 0 90 110" aria-hidden="true">
+    <path d="M12 8 l8 6 8-6 8 6 8-6 8 6 8-6 8 6 8-6 v88 l-8 6-8-6-8 6-8-6-8 6-8-6-8 6-8-6 z"
+          fill="#fffdf8" stroke="#14161f" stroke-width="4" stroke-linejoin="round"/>
+    <circle cx="34" cy="38" r="3.6" fill="#14161f"/><circle cx="56" cy="38" r="3.6" fill="#14161f"/>
+    <path d="M34 52 q11 9 22 0" stroke="#14161f" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+    <rect x="26" y="66" width="38" height="6" rx="2" fill="#2f4df0"/>
+    <rect x="26" y="76" width="26" height="4" rx="2" fill="#d8d8cf"/>
+  </svg>
+  <h1>Franklin écrit<br>ton rapport.</h1>
+  <div class="j"><p id="j">Il relit tes lignes une dernière fois.</p></div>
+  <div class="barre"><i></i></div>
+  <p class="pied">Une à deux minutes. Ne ferme pas cette page —<br>elle se rechargera toute seule.</p>
+</div>
+<script>
+var J = ["Il relit tes lignes une dernière fois.",
+         "Il compte. Il ne survole pas.",
+         "Il cherche le détail que tu as oublié.",
+         "Il hésite sur une formulation.",
+         "Il vérifie chaque chiffre avant de l'écrire.",
+         "Il a trouvé quelque chose. Il le garde pour la fin."];
+var k = 0;
+setInterval(function(){ k = (k + 1) % J.length; document.getElementById('j').textContent = J[k]; }, 4000);
+
+/* On demande la fabrication, puis on recharge. Si la connexion casse en route,
+   on retente une fois : le POST est idempotent côté serveur. */
+function fabriquer(reste) {
+  fetch(window.location.pathname, { method: 'POST' })
+    .then(function(){ window.location.reload(); })
+    .catch(function(){ if (reste > 0) setTimeout(function(){ fabriquer(reste - 1); }, 4000);
+                       else document.getElementById('j').textContent = "Ça coince. Recharge la page, ton rapport n'est pas perdu."; });
+}
+fabriquer(2);
+</script>
+</body></html>`;
+
+/** Fabrication du rapport. Idempotent : si le HTML existe déjà, on ne refait rien. */
+export async function POST(_req: Request, { params }: { params: { token: string } }) {
+  const rec = await getRecord(params.token);
+  if (!rec) return new Response("introuvable", { status: 404 });
+  if (rec.status === "preview_ready") return new Response("non payé", { status: 402 });
+  if (rec.report_html) return new Response(null, { status: 204 });
+
+  try {
+    const rapport = await generateRapport(rec.stats, rec.prenom);
+    const date = new Date().toLocaleDateString("fr-FR");
+    const html = renderRapport(rapport, rec.stats as Record<string, unknown>, rec.prenom, date);
+    await updateRecord(params.token, { report_html: html, status: "ready" });
+
+    /* Le PDF ne peut être fabriqué qu'ici : c'est le seul endroit où l'on tient
+       encore l'objet Rapport structuré. L'email part donc d'ici aussi. Un échec
+       n'empêche pas la livraison : le client a déjà sa page. */
+    try {
+      const pdf = await rapportEnPdf(rapport, rec.prenom, date);
+      await sendReportEmail(
+        rec.email,
+        rec.prenom,
+        `https://www.franklinai.fr/rapport/${params.token}`,
+        { filename: `rapport-franklin-${rec.prenom.toLowerCase()}.pdf`, content: pdf },
+      );
+    } catch (e) {
+      await journaliserErreur("rapport/pdf-email", e, false);
+    }
+    return new Response(null, { status: 204 });
+  } catch (e) {
+    /* Grave : le client a payé et n'a rien. Alerte immédiate. */
+    await journaliserErreur("rapport/generation", e, true);
+    return new Response("génération impossible", { status: 500 });
+  }
 }
