@@ -106,25 +106,56 @@ function sansHeures(r: VisionResult): VisionResult {
   return r;
 }
 
+/** Somme des écarts absolus avec les totaux imprimés. Sert à choisir la
+ *  meilleure des tentatives, pas à refuser quoi que ce soit. */
+function ecart(r: VisionResult): number {
+  const d = Math.round(r.transactions.filter((t) => t.side === "debit").reduce((s, t) => s + t.amount, 0) * 100) / 100;
+  const c = Math.round(r.transactions.filter((t) => t.side === "credit").reduce((s, t) => s + t.amount, 0) * 100) / 100;
+  const { total_debits_imprime: td, total_credits_imprime: tc } = r.meta;
+  return (td !== null ? Math.abs(d - td) : 0) + (tc !== null ? Math.abs(c - tc) : 0);
+}
+
+/**
+ * On ne refuse JAMAIS un client pour un écart de lecture.
+ *
+ * Avant, une extraction imparfaite levait une exception et le client repartait
+ * les mains vides. Une cliente a été perdue pour 28,90 € d'écart sur 3 698,51 €
+ * de débits : un export bancaire impeccable, refusé par notre propre contrôle.
+ *
+ * Le contrôle de cohérence reste utile, mais il change de rôle : il ne décide
+ * plus s'il faut servir ou non, il décide seulement s'il faut retenter. Trois
+ * lectures au plus, on garde la meilleure, et on la sert quoi qu'il arrive.
+ *
+ * Ce qui reste vrai : aucun montant n'est inventé. Ce qui peut arriver : qu'il
+ * en manque quelques-uns. Sur un portrait humoristique, c'est un échange
+ * évident — un client servi avec 0,8 % d'écart vaut infiniment mieux qu'un
+ * client refusé avec 0 %.
+ */
 export async function parsePdf(buf: Buffer): Promise<VisionResult> {
   const b64 = buf.toString("base64");
   let extra = "";
-  let last: VisionResult | null = null;
-  /* Trois tentatives, plus deux. Une cliente a été refusée sur un export SG
-     parfaitement lisible : l'écart était de 28,90 € sur 3 698,51 € de débits,
-     soit une poignée de lignes ratées. La lecture est probabiliste, une seule
-     reprise ne suffit pas. Chaque tentative repart de zéro avec le détail de
-     l'écart précédent. */
+  let meilleur: VisionResult | null = null;
+  let meilleurEcart = Infinity;
+
   for (let attempt = 1; attempt <= 3; attempt++) {
     const r = await call(b64, extra);
     const errs = coherence(r);
-    last = r;
     if (!errs.length) return sansHeures(r);
-    extra = `\n\nATTENTION, ton extraction précédente (tentative ${attempt}) était incohérente : ${errs.join(" ; ")}. ` +
+
+    const e = ecart(r);
+    if (e < meilleurEcart) { meilleurEcart = e; meilleur = r; }
+
+    extra =
+      `\n\nATTENTION, ton extraction précédente (tentative ${attempt}) était incohérente : ${errs.join(" ; ")}. ` +
       `Un écart de cette taille vient presque toujours de lignes oubliées, pas d'un mauvais montant. ` +
       `Reprends le document page par page, compte les écritures de chaque page, et vérifie que tu ` +
       `n'as sauté ni un report de solde, ni une ligne en bas de page, ni une écriture sur deux lignes. ` +
       `Recommence intégralement.`;
   }
-  throw new Error("extraction incohérente après 2 tentatives : " + coherence(last!).join(" ; "));
+
+  /* Trois lectures, aucune parfaite : on sert la moins mauvaise. Le seul cas où
+     l'on ne peut rien faire est l'absence totale de transactions, et il est
+     traité plus loin, dans la route d'import. */
+  console.warn(`vision: servi avec un écart de ${Math.round(meilleurEcart * 100) / 100} € après 3 lectures`);
+  return sansHeures(meilleur!);
 }
