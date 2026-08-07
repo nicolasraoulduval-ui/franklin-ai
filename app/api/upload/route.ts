@@ -3,6 +3,7 @@ import { parsePdf } from "../../../lib/vision";
 import { enrich, selfPatternsFromHolder } from "../../../lib/enrich";
 import { computeStats } from "../../../lib/stats";
 import { calculerNote } from "../../../lib/note";
+import { calculerSi } from "../../../lib/si";
 import { buildPreview } from "../../../lib/preview";
 import { createRecord } from "../../../lib/db";
 import { ipDe, verifierDebit } from "../../../lib/ratelimit";
@@ -125,6 +126,9 @@ export async function POST(req: Request) {
        En vivant dans le stats.json, ses chiffres deviennent automatiquement
        autorisés par le validateur de chiffres orphelins. */
     stats.note_gestion = calculerNote(stats);
+    /* Même principe pour les « Si… » : les montants et les équivalences sortent
+       du code, le modèle n'écrira que l'introduction et la chute. */
+    stats.si_alors = calculerSi(stats);
 
     const preview = buildPreview(stats as Record<string, unknown>);
     // purge : les transactions sortent du scope ici ; seules les stats agrégées sont conservées
