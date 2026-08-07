@@ -38,42 +38,50 @@ function eur(x: number): string {
 const mot = (n: number): string =>
   ["zéro", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf", "dix"][n] ?? String(n);
 
-/** Une équivalence n'a de sens que si le diviseur existe et n'est pas ridicule. */
-function equivalence(montant: number, stats: Stats): string | null {
+/** Une équivalence n'a de sens que si le diviseur existe et n'est pas ridicule.
+ *  `dejaVues` évite de servir deux fois la même unité : lire « trois mois
+ *  d'abonnements » puis « cinq mois d'abonnements » donne l'impression d'un
+ *  gabarit, pas d'une lecture. */
+function equivalence(montant: number, stats: Stats, dejaVues: Set<string>): string | null {
   const cat = stats?.depenses_par_categorie ?? {};
 
   const abosMensuel: number = stats?.abonnements?.total_mensuel ?? 0;
-  if (abosMensuel > 5) {
+  if (abosMensuel > 5 && !dejaVues.has("abos")) {
     const n = Math.round(montant / abosMensuel);
-    if (n >= 2 && n <= 60) return `${n <= 10 ? mot(n) : n} mois de tous tes abonnements réunis`;
+    if (n >= 2 && n <= 60) { dejaVues.add("abos"); return `${n <= 10 ? mot(n) : n} mois de tous tes abonnements réunis`; }
   }
 
   const liv = cat.livraison;
-  if (liv?.nb >= 3) {
-    const panier = liv.total / liv.nb;
-    const n = Math.round(montant / panier);
-    if (n >= 2 && n <= 200) return `${n <= 10 ? mot(n) : n} commandes de livraison`;
+  if (liv?.nb >= 3 && !dejaVues.has("liv")) {
+    const n = Math.round(montant / (liv.total / liv.nb));
+    if (n >= 2 && n <= 200) { dejaVues.add("liv"); return `${n <= 10 ? mot(n) : n} commandes de livraison`; }
   }
 
   const cou = cat.courses;
-  if (cou?.nb >= 3) {
-    const panier = cou.total / cou.nb;
-    const n = Math.round(montant / panier);
-    if (n >= 2 && n <= 200) return `${n <= 10 ? mot(n) : n} paniers de courses`;
+  if (cou?.nb >= 3 && !dejaVues.has("cou")) {
+    const n = Math.round(montant / (cou.total / cou.nb));
+    if (n >= 2 && n <= 200) { dejaVues.add("cou"); return `${n <= 10 ? mot(n) : n} paniers de courses`; }
   }
 
   const nbMois: number = stats?.periode?.nb_mois ?? 0;
   const credits: number = stats?.totaux?.credits ?? 0;
+  if (nbMois > 0 && credits > 0 && !dejaVues.has("jours")) {
+    const n = Math.round(montant / (credits / (nbMois * 30)));
+    if (n >= 2 && n <= 120) { dejaVues.add("jours"); return `${n <= 10 ? mot(n) : n} jours de tout ce qui rentre`; }
+  }
+  /* Dernier recours : le pourcentage d'un mois de revenus. Il fonctionne même
+     avec un seul relevé et une vie financière peu bavarde — c'est ce qui évite
+     qu'un client qui apporte peu de matière reparte sans cette section. */
   if (nbMois > 0 && credits > 0) {
-    const jour = credits / (nbMois * 30);
-    const n = Math.round(montant / jour);
-    if (n >= 2 && n <= 120) return `${n <= 10 ? mot(n) : n} jours de tout ce qui rentre`;
+    const pct = Math.round((100 * montant) / (credits / nbMois));
+    if (pct >= 1 && pct <= 90) return `${pct} % de ce qui rentre en un mois`;
   }
   return null;
 }
 
 export function calculerSi(stats: Stats): SiAlors[] {
   const out: SiAlors[] = [];
+  const dejaVues = new Set<string>();
   const nbMois: number = stats?.periode?.nb_mois ?? 0;
   const surLaPeriode = nbMois > 1 ? `sur tes ${nbMois} relevés` : "sur ce relevé";
 
@@ -81,7 +89,7 @@ export function calculerSi(stats: Stats): SiAlors[] {
   const top = (stats?.top_marchands ?? [])[0];
   if (top && top.total > 40) {
     const m = C(0.25 * top.total);
-    const eq = equivalence(m, stats);
+    const eq = equivalence(m, stats, dejaVues);
     if (eq) {
       out.push({
         titre: `Si tu allais un quart de fois en moins chez ${top.marchand}`,
@@ -93,7 +101,7 @@ export function calculerSi(stats: Stats): SiAlors[] {
   // 2 · les frais de découvert ramenés à zéro. Le seul poste qui n'achète rien.
   const frais: number = stats?.frais_decouvert?.total ?? 0;
   if (frais > 10) {
-    const eq = equivalence(frais, stats);
+    const eq = equivalence(frais, stats, dejaVues);
     if (eq) {
       out.push({
         titre: "Si tu n'avais jamais touché le découvert",
@@ -111,7 +119,7 @@ export function calculerSi(stats: Stats): SiAlors[] {
       const n = Math.round(annuel / cou.total);
       if (n >= 2 && n <= 60) eq = `${n <= 10 ? mot(n) : n} fois tout ce que tu as mis dans ton frigo ${surLaPeriode}`;
     }
-    eq = eq ?? equivalence(annuel, stats);
+    eq = eq ?? equivalence(annuel, stats, dejaVues);
     if (eq) {
       out.push({
         titre: "Si tes abonnements continuent exactement comme ça pendant un an",
