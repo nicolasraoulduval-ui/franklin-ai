@@ -45,44 +45,33 @@ export const CSS_SCHEMAS = `
   .fs-bar.chaud{background:#e6392e}
   .fs-val.chaud{color:#e6392e}
 
-  /* 3 · anneau */
-  .fs-ring{width:150px;height:150px;border-radius:50%;position:relative;
-    background:conic-gradient(#2f4df0 0 295deg,#edf1fb 295deg 360deg);
-    border:2.5px solid #14161f;display:flex;align-items:center;justify-content:center}
-  .fs-hole{width:86px;height:86px;border-radius:50%;background:#fffdf8;border:2.5px solid #14161f;
-    display:flex;align-items:center;justify-content:center;
-    font-family:'Gabarito',sans-serif;font-weight:900;font-size:22px}
-  .fs-side{margin-left:20px;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;line-height:2}
-  .fs-dot{display:inline-block;width:10px;height:10px;border-radius:3px;border:1.5px solid #14161f;margin-right:7px;vertical-align:-1px}
+  /* 3 · le moment de faiblesse. Le jour vient des paiements carte, l'heure des
+     virements : ce sont deux sources différentes, chacune est donc étiquetée.
+     Les relevés n'horodatent pas les achats par carte — promettre une heure de
+     dépense serait promettre une donnée qui n'existe pas. */
+  .fs-moment{display:flex;align-items:stretch;text-align:center}
+  .fs-mo{padding:0 20px}
+  .fs-mo.sep{border-left:2px dashed rgba(20,22,31,.2)}
+  .fs-mo-v{font-family:'Gabarito',sans-serif;font-weight:900;font-size:40px;line-height:1.05;color:#2f4df0}
+  .fs-mo-v small{font-size:22px;opacity:.6}
+  .fs-mo-l{margin-top:8px;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;
+    line-height:1.5;color:#6b6f7e;max-width:16ch;margin-left:auto;margin-right:auto}
 
-  /* 3 · les deux tickets */
-  .fs-tickets{display:flex;align-items:center;gap:10px}
-  .fs-tick2{border:2.5px solid #14161f;border-radius:9px;background:#fffdf8;padding:12px 13px;
-    min-width:118px;box-shadow:3px 3px 0 rgba(20,22,31,.12)}
-  .fs-tick2.chaud{background:#edf1fb;border-color:#2f4df0}
-  .fs-tk-h{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.05em;color:#6b6f7e}
-  .fs-tk-m{font-family:'IBM Plex Mono',ui-monospace,monospace;font-weight:700;font-size:12px;margin:5px 0 7px}
-  .fs-tk-a{font-family:'Gabarito',sans-serif;font-weight:900;font-size:19px}
-  .fs-fleche{display:flex;flex-direction:column;align-items:center;font-size:19px;color:#14161f;line-height:1}
-  .fs-fleche span{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;color:#6b6f7e;margin-bottom:3px}
-
-  /* 4 · cadran 24 h */
-  .fs-day{width:100%;max-width:330px}
-  .fs-track{position:relative;height:52px;border:2.5px solid #14161f;border-radius:9px;
-    background:linear-gradient(90deg,#14161f 0 12.5%,#edf1fb 12.5% 91.6%,#14161f 91.6% 100%)}
-  .fs-tick{position:absolute;top:9px;width:9px;height:9px;border-radius:50%;background:#2f4df0;border:2px solid #14161f}
-  .fs-tick.nuit{background:#e6392e;top:28px}
-  .fs-hours{display:flex;justify-content:space-between;margin-top:8px;
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;color:#6b6f7e}
+  /* 4 · le solde de chaque mois, de part et d'autre de zéro */
+  .fs-mois{display:flex;gap:12px;position:relative;padding:4px 0}
+  .fs-m{display:flex;flex-direction:column;align-items:center;width:36px}
+  .fs-mp{height:66px;display:flex;align-items:flex-end}
+  .fs-mn{height:66px;display:flex;align-items:flex-start}
+  .fs-m i{display:block;width:26px;background:#2f4df0;border:2.5px solid #14161f;border-radius:4px}
+  .fs-m i.chaud{background:#e6392e}
+  .fs-ml{margin-top:8px;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;color:#6b6f7e}
+  .fs-zero{position:absolute;left:-8px;right:-8px;top:70px;border-top:2px dashed rgba(20,22,31,.35)}
 
   @media(max-width:760px){
     .fs-grid{grid-template-columns:1fr}
     .fs-duo{gap:34px}
   }
 `;
-
-const tick = (pct: number, nuit = false) =>
-  `<i class="fs-tick${nuit ? " nuit" : ""}" style="left:calc(${pct}% - 6px)"></i>`;
 
 export const SCHEMAS_LANDING = `
 <section class="schemas">
@@ -118,37 +107,36 @@ export const SCHEMAS_LANDING = `
       </div>
 
       <div class="fs-card">
-        <div class="fs-t">Courses le samedi, livraison le dimanche</div>
+        <div class="fs-t">Ton moment de faiblesse</div>
         <div class="fs-viz" style="align-items:center">
-          <div class="fs-tickets">
-            <div class="fs-tick2">
-              <div class="fs-tk-h">SAMEDI · 14:22</div>
-              <div class="fs-tk-m">INTERMARCHÉ</div>
-              <div class="fs-tk-a">62,40 €</div>
+          <div class="fs-moment">
+            <div class="fs-mo">
+              <div class="fs-mo-v">JEUDI</div>
+              <div class="fs-mo-l">le jour où ta carte sort le plus</div>
             </div>
-            <div class="fs-fleche"><span>18 h</span>→</div>
-            <div class="fs-tick2 chaud">
-              <div class="fs-tk-h">DIMANCHE · 20:51</div>
-              <div class="fs-tk-m">UBER *EATS</div>
-              <div class="fs-tk-a">27,90 €</div>
+            <div class="fs-mo sep">
+              <div class="fs-mo-v">23<small>h</small></div>
+              <div class="fs-mo-l">l'heure de tes virements</div>
             </div>
           </div>
         </div>
-        <p class="fs-p">Le frigo est plein.<br><span>Le livreur aussi.</span></p>
+        <p class="fs-p">Le jeudi ne t'a rien fait.<br><span>Toi, si.</span></p>
       </div>
 
       <div class="fs-card">
-        <div class="fs-t">L'heure de tes virements</div>
-        <div class="fs-viz" style="align-items:center">
-          <div class="fs-day">
-            <div class="fs-track">
-              ${tick(38)}${tick(45)}${tick(53)}${tick(60)}
-              ${tick(95, true)}${tick(97, true)}${tick(4, true)}${tick(7, true)}${tick(9, true)}
-            </div>
-            <div class="fs-hours"><span>00h</span><span>06h</span><span>12h</span><span>18h</span><span>00h</span></div>
+        <div class="fs-t">Ce qu'il te reste à la fin de chaque mois</div>
+        <div class="fs-viz">
+          <div class="fs-mois">
+            <div class="fs-zero"></div>
+            <div class="fs-m"><div class="fs-mp"><i style="height:26px"></i></div><div class="fs-mn"></div><div class="fs-ml">JANV</div></div>
+            <div class="fs-m"><div class="fs-mp"><i style="height:11px"></i></div><div class="fs-mn"></div><div class="fs-ml">FÉVR</div></div>
+            <div class="fs-m"><div class="fs-mp"><i style="height:34px"></i></div><div class="fs-mn"></div><div class="fs-ml">MARS</div></div>
+            <div class="fs-m"><div class="fs-mp"></div><div class="fs-mn"><i class="chaud" style="height:62px"></i></div><div class="fs-ml">AVR</div></div>
+            <div class="fs-m"><div class="fs-mp"><i style="height:8px"></i></div><div class="fs-mn"></div><div class="fs-ml">MAI</div></div>
+            <div class="fs-m"><div class="fs-mp"><i style="height:19px"></i></div><div class="fs-mn"></div><div class="fs-ml">JUIN</div></div>
           </div>
         </div>
-        <p class="fs-p">Ton banquier dort.<br><span>Pas toi.</span></p>
+        <p class="fs-p">Cinq mois à l'équilibre.<br><span>Et puis avril.</span></p>
       </div>
 
     </div>
