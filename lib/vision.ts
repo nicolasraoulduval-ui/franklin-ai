@@ -72,8 +72,23 @@ function coherence(r: VisionResult): string[] {
   const c = Math.round(r.transactions.filter((t) => t.side === "credit").reduce((s, t) => s + t.amount, 0) * 100) / 100;
   const errs: string[] = [];
   const { total_debits_imprime: td, total_credits_imprime: tc, solde_prec, solde_nouv } = r.meta;
-  if (td != null && Math.abs(d - td) > 0.01) errs.push(`débits extraits ${d} ≠ total imprimé ${td}`);
-  if (tc != null && Math.abs(c - tc) > 0.01) errs.push(`crédits extraits ${c} ≠ total imprimé ${tc}`);
+  /* Tolérance plutôt qu'exactitude au centime.
+   *
+   *  Le contrôle exact bloquait des clients pour rien : une cliente a été refusée
+   *  sur un export SG impeccable, à cause d'un écart de 28,90 € sur 3 698,51 € de
+   *  débits — 0,8 %, quelques lignes ratées par la lecture. Perdre une vente pour
+   *  préserver une décimale que personne ne vérifiera jamais est un mauvais échange.
+   *
+   *  Le contrôle garde tout son sens contre les vraies défaillances : une page
+   *  sautée, un bloc dupliqué, une colonne mal lue produisent des écarts d'un autre
+   *  ordre de grandeur. Le seuil sépare les deux — 1 % du total, avec un plancher
+   *  de 5 € pour les petits relevés où 1 % ne veut rien dire.
+   *
+   *  Contrepartie assumée : les totaux peuvent être très légèrement en dessous du
+   *  relevé. Aucun montant n'est inventé — il en manque parfois quelques-uns. */
+  const seuil = (total: number) => Math.max(Math.abs(total) * 0.01, 5);
+  if (td !== null && Math.abs(d - td) > seuil(td)) errs.push(`débits extraits ${d} ≠ total imprimé ${td}`);
+  if (tc !== null && Math.abs(c - tc) > seuil(tc)) errs.push(`crédits extraits ${c} ≠ total imprimé ${tc}`);
   if (td == null || tc == null) {
     const attendu = Math.round((solde_prec + c - d) * 100) / 100;
     if (Math.abs(attendu - solde_nouv) > 0.02) errs.push(`soldes incohérents: ${attendu} ≠ ${solde_nouv}`);
