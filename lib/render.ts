@@ -88,6 +88,35 @@ export function renderRapport(r: Rapport, stats: Stats, prenom: string, dateGen:
       <table class="bulletin"><tr><th>MATIÈRE</th><th>NOTE</th><th>APPRÉCIATION DU RELEVÉ</th></tr>${rows}</table></div></section>`);
   }
 
+  /* « Si… » — les montants et les équivalences viennent de stats.si_alors
+     (lib/si.ts). Le modèle n'écrit que l'intro et la chute : c'est la même
+     règle que la note, pour la même raison. On constate, on ne recommande
+     pas — « ça représente », jamais « tu devrais ». */
+  const si = stats.si_alors;
+  if (si?.length) {
+    const lignes = si
+      .map(
+        (x: any) => `<div class="si-l"><div class="si-t">${esc(x.titre)}</div>
+          <div class="si-m"><b>${esc(x.montant)}</b> <i>${esc(x.periode)}</i></div>
+          <div class="si-e">soit ${esc(x.equivalence)}</div></div>`,
+      )
+      .join("");
+    S.push(`<section><div class="wrap"><div class="kicker">Si…</div><h2>Le même argent,<br>raconté autrement.</h2>
+      <style>
+        .si-l{border:2px solid #14161f;border-radius:12px;background:#fffdf8;padding:16px 18px;margin:12px 0}
+        .si-t{font-family:'IBM Plex Mono',ui-monospace,monospace;font-weight:700;font-size:12.5px;
+          letter-spacing:.03em;text-transform:uppercase;line-height:1.5}
+        .si-m{margin:9px 0 4px;font-family:'Gabarito',sans-serif;font-weight:900;font-size:30px;line-height:1.1}
+        .si-m i{font-style:normal;font-family:'IBM Plex Mono',ui-monospace,monospace;font-weight:400;
+          font-size:12px;opacity:.55;margin-left:6px}
+        .si-e{font-size:15.5px;color:#4a4f60}
+      </style>
+      ${paras(r.si_alors?.intro)}${lignes}${paras(r.si_alors?.punchline)}
+      <p style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11.5px;opacity:.55;line-height:1.6;margin-top:16px">
+        Calculé sur tes chiffres. Ce n'est pas un conseil : Franklin constate, il ne recommande rien.</p>
+      </div></section>`);
+  }
+
   S.push(`<section class="verdict"><div class="wrap"><div class="kicker">Le verdict</div><h2>Tout ça pour ça.<br>Et c'est très bien.</h2>
     ${paras(r.verdict.texte)}<p class="last"><mark>${esc(r.verdict.derniere_ligne)}</mark></p></div></section>`);
 
