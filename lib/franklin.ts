@@ -15,6 +15,8 @@ export interface Rapport {
   verdict: { texte: string; derniere_ligne: string };
   /** L'IA n'écrit que le commentaire : la note vient de lib/note.ts, jamais du modèle. */
   note_finale?: { commentaire: string };
+  /** Même chose : montants et équivalences viennent de lib/si.ts, pas du modèle. */
+  si_alors?: { intro: string; punchline: string };
   cartes: Array<{ texte: string }>;
 }
 
@@ -29,6 +31,7 @@ const SCHEMA = {
     bulletin: { type: "array", minItems: 5, maxItems: 7, items: { type: "object", properties: { matiere: { type: "string" }, note: { type: "string" }, appreciation: { type: "string" } }, required: ["matiere", "note", "appreciation"] } },
     verdict: { type: "object", properties: { texte: { type: "string" }, derniere_ligne: { type: "string" } }, required: ["texte", "derniere_ligne"] },
     note_finale: { type: "object", properties: { commentaire: { type: "string" } }, required: ["commentaire"] },
+    si_alors: { type: "object", properties: { intro: { type: "string" }, punchline: { type: "string" } }, required: ["intro", "punchline"] },
     cartes: { type: "array", minItems: 4, maxItems: 4, items: { type: "object", properties: { texte: { type: "string" } }, required: ["texte"] } },
   },
   required: ["archetype", "mensonges", "signature", "verdict", "cartes", "note_finale"],
