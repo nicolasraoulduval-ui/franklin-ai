@@ -10,7 +10,7 @@ export default function CGV() {
       <h2>Le service</h2>
       <p>
         Franklin AI analyse le ou les relevés bancaires que tu fournis et génère : un aperçu gratuit (trois faits chiffrés)
-        puis, après paiement, un rapport complet humoristique accessible par lien privé, envoyé par email et joint en PDF.
+        puis, après paiement, un rapport complet humoristique accessible par lien privé, téléchargeable en PDF.
       </p>
       <h2>Prix et paiement</h2>
       <p>
@@ -19,9 +19,11 @@ export default function CGV() {
       </p>
       <h2>Livraison</h2>
       <p>
-        Le rapport est généré immédiatement après confirmation du paiement (généralement en moins de deux minutes)
-        et reste accessible via ton lien privé pendant 30 jours. Une copie PDF t&apos;est envoyée par email : elle
-        t&apos;appartient et reste lisible après l&apos;expiration du lien.
+        Le rapport est généré immédiatement après confirmation du paiement (généralement en moins de
+        deux minutes) et reste accessible via ton lien privé pendant 30 jours. Un bouton te permet de
+        le télécharger en PDF à tout moment : cette copie t&apos;appartient et reste lisible après
+        l&apos;expiration du lien. Conserve ton lien privé — c&apos;est le seul moyen de revenir à ton
+        rapport, il n&apos;y a pas de compte.
       </p>
       <h2>Droit de rétractation</h2>
       <p>
