@@ -23,7 +23,14 @@ const SCHEMA = {
       amount: { type: "number", description: "montant positif, exactement comme imprimé" },
       side: { type: "string", enum: ["debit", "credit"] },
       op_date: { type: "string", description: "date d'opération dd/mm si différente" },
-      op_time: { type: "string", description: "heure hh:mm si présente" },
+      /* op_time a été retiré du schéma. Vérifié sur cinq relevés Société Générale
+         réels : un relevé ne contient AUCUNE heure, ni pour les paiements carte,
+         ni pour les virements. Une ligne porte deux dates, un libellé, un montant.
+         Le champ existait quand même, et le modèle le remplissait — il inventait.
+         Ces heures nourrissaient ensuite virements_nocturnes et ressortaient dans
+         les rapports comme des faits. Le validateur de chiffres orphelins ne
+         pouvait rien voir : il vérifie que le rapport ne dépasse pas le stats.json,
+         pas que le stats.json dit la vérité. La fabrication avait lieu en amont. */
     }, required: ["date", "label", "amount", "side"] } },
   },
   required: ["banque", "titulaire", "meta", "transactions"],
@@ -74,6 +81,16 @@ function coherence(r: VisionResult): string[] {
   return errs;
 }
 
+/** Filet de sécurité : un modèle sollicité sur un document sans heure finit
+ *  toujours par en produire une. On les supprime à la source plutôt que de
+ *  faire confiance au schéma. */
+function sansHeures(r: VisionResult): VisionResult {
+  for (const t of r.transactions) {
+    if ((t as { op_time?: string | null }).op_time) (t as { op_time?: string | null }).op_time = null;
+  }
+  return r;
+}
+
 export async function parsePdf(buf: Buffer): Promise<VisionResult> {
   const b64 = buf.toString("base64");
   let extra = "";
@@ -82,7 +99,7 @@ export async function parsePdf(buf: Buffer): Promise<VisionResult> {
     const r = await call(b64, extra);
     const errs = coherence(r);
     last = r;
-    if (!errs.length) return r;
+    if (!errs.length) return sansHeures(r);
     extra = `\n\nATTENTION, ta première extraction était incohérente : ${errs.join(" ; ")}. ` +
       `Tu as probablement oublié ou dupliqué des écritures, ou mal lu une colonne. Recommence intégralement.`;
   }
