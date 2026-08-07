@@ -45,10 +45,13 @@ export const CSS_SCHEMAS = `
   .fs-bar.chaud{background:#e6392e}
   .fs-val.chaud{color:#e6392e}
 
-  /* 3 · le moment de faiblesse. Le jour vient des paiements carte, l'heure des
-     virements : ce sont deux sources différentes, chacune est donc étiquetée.
-     Les relevés n'horodatent pas les achats par carte — promettre une heure de
-     dépense serait promettre une donnée qui n'existe pas. */
+  /* 3 · le moment de faiblesse.
+     Vérifié sur cinq relevés Société Générale réels : un relevé bancaire ne
+     contient AUCUNE heure — ni pour les paiements carte, ni pour les virements.
+     Une ligne carte porte deux dates et rien d'autre. Toute heure affichée par
+     Franklin serait donc inventée, ce qui est exactement ce que le produit
+     promet de ne jamais faire. On montre le jour et le montant moyen : deux
+     grandeurs réellement calculables. */
   .fs-moment{display:flex;align-items:stretch;text-align:center}
   .fs-mo{padding:0 20px}
   .fs-mo.sep{border-left:2px dashed rgba(20,22,31,.2)}
@@ -115,8 +118,8 @@ export const SCHEMAS_LANDING = `
               <div class="fs-mo-l">le jour où ta carte sort le plus</div>
             </div>
             <div class="fs-mo sep">
-              <div class="fs-mo-v">23<small>h</small></div>
-              <div class="fs-mo-l">l'heure de tes virements</div>
+              <div class="fs-mo-v">78<small> €</small></div>
+              <div class="fs-mo-l">dépensés ce jour-là, en moyenne</div>
             </div>
           </div>
         </div>
