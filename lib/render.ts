@@ -17,7 +17,7 @@ function barChart2(s: Stats): string {
       <div class="bcol"><div class="bval mono">${r.nb}</div><div class="bar" style="height:210px"></div><div class="blab mono">RESTOS &amp; BARS</div></div>
       <div class="bcol"><div class="bval mono">${c.nb}</div><div class="bar tiny" style="height:${h2}px"></div><div class="blab mono">COURSES</div></div>
       <div class="annot"><svg viewBox="0 0 120 60" width="110"><path d="M8 8 q60 -6 92 34" fill="none" stroke="#14161f" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="1 5"/><path d="M100 42 l0 -12 M100 42 l-12 -2" fill="none" stroke="#14161f" stroke-width="2.2" stroke-linecap="round"/></svg>
-      <div class="mono">on la voit à peine.<br>comme ta poêle.</div></div>
+      <div class="mono">${c.nb === 0 ? "zéro passage.<br>ta cuisine est décorative." : c.nb * 4 <= r.nb ? "on la voit à peine.<br>comme ta poêle." : `${Math.round(r.nb / Math.max(c.nb, 1))} fois plus souvent.<br>ta poêle a des horaires.`}</div></div>
     </div></div>`;
 }
 
@@ -40,13 +40,18 @@ function donut(s: Stats): string {
   const nSelf = s.epargne_yoyo?.sorties_vers_soi?.nb ?? 0;
   const nOther = s.depenses_par_categorie?.virement_emis?.nb ?? 0;
   if (nSelf < 5) return "";
+  /* La légende dépend du résultat. Avant, elle affirmait toujours la même chose —
+     y compris quand le graphique disait l'inverse. Une blague écrite d'avance finit
+     toujours par mentir sur les données de quelqu'un. */
+  const domine = nSelf > nOther;
+  const part = Math.round((100 * nSelf) / Math.max(nSelf + nOther, 1));
   const deg = Math.round((360 * nSelf) / Math.max(nSelf + nOther, 1));
   return `<div class="chart"><div class="chart-title mono">DESTINATAIRE N°1 DE TES VIREMENTS</div>
     <div class="donutrow">
       <div class="donut" style="background:conic-gradient(var(--blue) 0 ${deg}deg, var(--hl) ${deg}deg 360deg)"><div class="hole mono">TOI</div></div>
       <div class="legend mono"><div><span class="dot d1"></span>TOI-MÊME — ${nSelf} VIREMENTS</div>
       <div><span class="dot d2"></span>LE RESTE DU MONDE — ${nOther}</div>
-      <div class="legend-note">tu es ton propre plus gros bénéficiaire. fidèle.</div></div>
+      <div class="legend-note">${domine ? "ton principal bénéficiaire, c'est toi. fidèle." : `${part} % de tes virements finissent chez toi. l'argent fait des allers-retours avant de choisir.`}</div></div>
     </div></div>`;
 }
 
