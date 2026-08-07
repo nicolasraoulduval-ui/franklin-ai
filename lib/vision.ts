@@ -87,8 +87,8 @@ function coherence(r: VisionResult): string[] {
    *  Contrepartie assumée : les totaux peuvent être très légèrement en dessous du
    *  relevé. Aucun montant n'est inventé — il en manque parfois quelques-uns. */
   const seuil = (total: number) => Math.max(Math.abs(total) * 0.01, 5);
-  if (td !== null && Math.abs(d - td) > seuil(td)) errs.push(`débits extraits ${d} ≠ total imprimé ${td}`);
-  if (tc !== null && Math.abs(c - tc) > seuil(tc)) errs.push(`crédits extraits ${c} ≠ total imprimé ${tc}`);
+  if (td != null && Math.abs(d - td) > seuil(td)) errs.push(`débits extraits ${d} ≠ total imprimé ${td}`);
+  if (tc != null && Math.abs(c - tc) > seuil(tc)) errs.push(`crédits extraits ${c} ≠ total imprimé ${tc}`);
   if (td == null || tc == null) {
     const attendu = Math.round((solde_prec + c - d) * 100) / 100;
     if (Math.abs(attendu - solde_nouv) > 0.02) errs.push(`soldes incohérents: ${attendu} ≠ ${solde_nouv}`);
@@ -112,7 +112,7 @@ function ecart(r: VisionResult): number {
   const d = Math.round(r.transactions.filter((t) => t.side === "debit").reduce((s, t) => s + t.amount, 0) * 100) / 100;
   const c = Math.round(r.transactions.filter((t) => t.side === "credit").reduce((s, t) => s + t.amount, 0) * 100) / 100;
   const { total_debits_imprime: td, total_credits_imprime: tc } = r.meta;
-  return (td !== null ? Math.abs(d - td) : 0) + (tc !== null ? Math.abs(c - tc) : 0);
+  return (td != null ? Math.abs(d - td) : 0) + (tc != null ? Math.abs(c - tc) : 0);
 }
 
 /**
