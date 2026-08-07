@@ -51,8 +51,10 @@ html = remplaceSection(html, '<section class="steps">', STEPS_V2);
 //     La page expliquait ce que Franklin fait sans jamais le montrer. Quatre
 //     graphiques valent mieux qu'un paragraphe : le visiteur se reconnaît
 //     avant d'avoir payé, ce qui est exactement le but d'une page d'accueil.
-const apresEtapes = html.indexOf("</section>", html.indexOf('<section class="steps">')) + "</section>".length;
-html = html.slice(0, apresEtapes) + "\n\n" + SCHEMAS_LANDING + html.slice(apresEtapes);
+// Les schémas passent AVANT « Comment ça marche » : on montre ce qu'on obtient
+// avant d'expliquer comment l'obtenir. L'envie vient du résultat, pas du mode d'emploi.
+const avantEtapes = html.indexOf('<section class="steps">');
+html = html.slice(0, avantEtapes) + SCHEMAS_LANDING + "\n\n" + html.slice(avantEtapes);
 
 // 3 bis · le tutoriel bancaire ne vit plus ici.
 //     Montrer « voilà comment exporter ton relevé » à quelqu'un qui n'est pas
