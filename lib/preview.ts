@@ -46,9 +46,40 @@ export function buildPreview(s: Stats): string[] {
   if (tr?.nb >= 3)
     facts.push({ prio: 9, texte: `${tr.nb} livraisons de repas pour ${eur(tr.total)}. Le livreur connaît ton code d'immeuble par cœur.` });
 
+  /* Faits de repli. Ils ne dépendent d'aucune catégorie et marchent donc sur
+     n'importe quel relevé, même celui d'une banque dont on ne reconnaît aucun
+     marchand. Une cliente a reçu trois fois la MÊME phrase de remplissage :
+     l'écran qui doit vendre le rapport se répétait trois fois avant de demander
+     6,90 €. On garde donc toujours de quoi remplir, et jamais deux fois pareil. */
+  const mois = Object.entries((s.par_mois ?? {}) as Record<string, any>);
+  if (mois.length >= 2) {
+    const cher = mois.reduce((b, c) => (c[1].debits > b[1].debits ? c : b));
+    facts.push({ prio: 20, texte: `Ton mois le plus lourd : ${cher[0]}, ${eur(cher[1].debits)} sortis. Les autres mois te regardent avec inquiétude.` });
+    const pire = mois.reduce((b, c) => (c[1].net < b[1].net ? c : b));
+    if (pire[1].net < 0)
+      facts.push({ prio: 21, texte: `En ${pire[0]}, tu as terminé à ${eur(pire[1].net)}. Ce mois-là, le compte a travaillé sans filet.` });
+  }
+  const t = s.totaux ?? {};
+  if (t.credits > 0)
+    facts.push({ prio: 22, texte: `${eur(t.credits)} sont entrés, ${eur(t.debits)} sont sortis. Il reste ${eur(t.net)} — c'est tout ce que la période a laissé derrière elle.` });
+  const p = s.periode ?? {};
+  if (p.nb_transactions)
+    facts.push({ prio: 23, texte: `${p.nb_transactions} transactions lues une par une. Pas survolées : comptées.` });
+  const gros = (s.top_marchands ?? [])[0];
+  if (gros)
+    facts.push({ prio: 24, texte: `Ton premier poste carte : ${gros.marchand}, ${eur(gros.total)} en ${gros.nb} fois. Une habitude, pas un accident.` });
+
   facts.sort((a, b) => a.prio - b.prio);
   const out = facts.slice(0, 3).map((f) => f.texte);
-  while (out.length < 3)
-    out.push(`${s.periode?.nb_transactions ?? "Des centaines de"} transactions lues ligne par ligne. Franklin a tout vu, et il a des questions.`);
+  /* Dernier filet, et il est varié : trois textes différents, jamais répétés. */
+  const secours = [
+    `${s.periode?.nb_transactions ?? "Des centaines de"} transactions lues une par une. Franklin a tout vu.`,
+    "Ton relevé est plus bavard que tu ne le crois. Le reste est derrière.",
+    "Il a trouvé de quoi écrire. Il garde le meilleur pour le rapport.",
+  ];
+  for (const texte of secours) {
+    if (out.length >= 3) break;
+    if (!out.includes(texte)) out.push(texte);
+  }
   return out;
 }
