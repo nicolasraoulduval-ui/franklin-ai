@@ -1,6 +1,7 @@
 /** Rédaction du rapport Franklin : stats -> JSON sections via l'API Claude.
  * Validateur de chiffres orphelins + retry (règle cardinale du produit). */
 import { FRANKLIN_SYSTEM_PROMPT } from "./prompt";
+import { LIBELLES } from "./stats";
 
 const API = "https://api.anthropic.com/v1/messages";
 const MODEL = process.env.FRANKLIN_MODEL || "claude-sonnet-5";
@@ -36,6 +37,30 @@ const SCHEMA = {
   },
   required: ["archetype", "mensonges", "signature", "verdict", "cartes", "note_finale"],
 };
+
+/**
+ * Traduction des clés techniques restées dans la prose.
+ *
+ * Le prompt interdit d'écrire « resto_bars » ou « ia_outils » ; le modèle le
+ * fait quand même de temps en temps, parce que la clé est sous ses yeux dans le
+ * stats.json. Une consigne ne suffit pas à garantir un résultat : on répare donc
+ * après coup, où c'est déterministe.
+ *
+ * On ne rejette pas le rapport pour ça — un client ne doit pas attendre une
+ * régénération complète à cause d'un tiret bas.
+ */
+const JARGON = new RegExp("\\b(" + Object.keys(LIBELLES).filter((k) => k.includes("_")).join("|") + ")\\b", "g");
+
+function sansJargon<T>(valeur: T): T {
+  if (typeof valeur === "string") return valeur.replace(JARGON, (k) => LIBELLES[k] ?? k) as unknown as T;
+  if (Array.isArray(valeur)) return valeur.map(sansJargon) as unknown as T;
+  if (valeur && typeof valeur === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, val] of Object.entries(valeur)) out[k] = sansJargon(val);
+    return out as unknown as T;
+  }
+  return valeur;
+}
 
 function collectNumbers(obj: unknown, acc: Set<number>): void {
   if (obj == null) return;
@@ -97,7 +122,7 @@ export async function generateRapport(stats: unknown, prenom: string): Promise<R
     const report = out.content.find((b: { type: string }) => b.type === "tool_use").input as Rapport;
     const bad = orphans(report, allowed);
     last = report;
-    if (!bad.length) return report;
+    if (!bad.length) return sansJargon(report);
     userMsg += `\n\nATTENTION : ta version précédente citait des chiffres absents du JSON : ${bad.slice(0, 10).join(", ")}. ` +
       `Régénère en n'utilisant QUE les chiffres du stats.json.`;
   }
