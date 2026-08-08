@@ -20,17 +20,17 @@ const BANQUES = [
   { id: "sg", nom: "Société Générale",
     ecrans: [["MES COMPTES", "COMPTE COURANT", "LIVRET A"], ["VIREMENTS", "DOCUMENTS", "RELEVÉS DE COMPTE"], ["JUIN 2026 · PDF", "MAI 2026 · PDF", "AVRIL 2026 · PDF"]],
     cible: [1, 2, 0],
-    titres: ["Ouvre l'app", "Va dans Documents", "Télécharge le PDF"],
+    titres: ["Ouvre l'app", "Va dans Documents", "Télécharge 3 à 6 mois"],
     ecrit: ["Connecte-toi à l'application Société Générale.", "Ouvre <b>Mes comptes</b> et sélectionne ton compte courant.", "Va dans <b>Documents</b>, puis <b>Relevés de compte</b>.", "Choisis le mois et télécharge le <b>PDF</b>. Répète pour les mois précédents."] },
   { id: "bnp", nom: "BNP Paribas",
     ecrans: [["MES COMPTES", "COMPTE CHÈQUES", "LIVRET"], ["OPÉRATIONS", "DOCUMENTS", "E-RELEVÉS"], ["JUIN 2026 · PDF", "MAI 2026 · PDF", "AVRIL 2026 · PDF"]],
     cible: [1, 2, 0],
-    titres: ["Ouvre l'app", "Rubrique Documents", "Télécharge le PDF"],
+    titres: ["Ouvre l'app", "Rubrique Documents", "Télécharge 3 à 6 mois"],
     ecrit: ["Connecte-toi à l'application BNP Paribas ou à mabanque.bnpparibas.", "Ouvre <b>Mes comptes</b>, puis <b>Documents</b>.", "Sélectionne <b>e-Relevés</b> et le compte concerné.", "Télécharge au format <b>PDF</b>, un fichier par mois."] },
   { id: "ca", nom: "Crédit Agricole",
     ecrans: [["MES COMPTES", "COMPTE DE DÉPÔT", "LIVRET A"], ["SYNTHÈSE", "MES E-DOCUMENTS", "RELEVÉS DE COMPTE"], ["JUIN 2026 · PDF", "MAI 2026 · PDF", "AVRIL 2026 · PDF"]],
     cible: [1, 2, 0],
-    titres: ["Ouvre l'app", "Mes e-documents", "Télécharge le PDF"],
+    titres: ["Ouvre l'app", "Mes e-documents", "Télécharge 3 à 6 mois"],
     ecrit: ["Connecte-toi à l'application Crédit Agricole de ta région.", "Sélectionne ton compte courant, puis <b>Mes e-documents</b>.", "Choisis <b>Relevés de compte</b> et le mois voulu.", "Télécharge en <b>PDF</b>."] },
   { id: "bourso", nom: "BoursoBank",
     ecrans: [["MON COMPTE", "COMPTE BANCAIRE", "ÉPARGNE"], ["OPÉRATIONS", "DOCUMENTS", "RELEVÉS"], ["JUIN 2026 · PDF", "MAI 2026 · CSV", "AVRIL 2026 · PDF"]],
@@ -72,7 +72,7 @@ export default function TutoExport() {
   return (
     <>
       <h1 style={{ fontFamily: gab, fontWeight: 900, fontSize: 34, lineHeight: 1.05 }}>
-        Récupérer ton relevé,<br />c&apos;est une minute.
+        Récupérer tes relevés,<br />c&apos;est une minute.
       </h1>
       <p style={{ color: "#6b6f7e", margin: "10px 0 22px" }}>
         Choisis ta banque : le chemin est toujours le même — ton compte, tes documents, ton relevé.
