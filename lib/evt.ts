@@ -12,6 +12,14 @@
 
 import { calculerNote } from "./note";
 
+/**
+ * Expéditeur des mails internes. franklinai.fr doit être vérifié chez Resend
+ * pour servir d'expéditeur ; tant qu'il ne l'est pas, EMAIL_FROM permet de
+ * partir d'un domaine déjà vérifié. Un mail que je m'envoie à moi-même n'a
+ * pas besoin d'un bel expéditeur, il a besoin d'arriver.
+ */
+const FROM = process.env.EMAIL_FROM ?? "Franklin AI <franklin@franklinai.fr>";
+
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -79,7 +87,7 @@ export async function journaliserErreur(route: string, e: unknown, grave = false
       method: "POST",
       headers: { Authorization: `Bearer ${cle}`, "content-type": "application/json" },
       body: JSON.stringify({
-        from: "Franklin AI <franklin@franklinai.fr>",
+        from: FROM,
         to: [dest],
         subject: "Franklin — échec grave sur " + route,
         text:
@@ -144,7 +152,7 @@ export async function notifierVente(info: {
       method: "POST",
       headers: { Authorization: `Bearer ${cle}`, "content-type": "application/json" },
       body: JSON.stringify({
-        from: "Franklin AI <franklin@franklinai.fr>",
+        from: FROM,
         to: [dest],
         subject: `Vente — ${info.prenom}, ${montant}`,
         text: lignes,
