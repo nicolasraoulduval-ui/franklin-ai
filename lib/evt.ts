@@ -89,3 +89,58 @@ export async function journaliserErreur(route: string, e: unknown, grave = false
     /* on ne casse pas la réponse pour un email d'alerte */
   }
 }
+
+/**
+ * Notification de vente.
+ *
+ * Stripe envoie déjà un mail à chaque paiement, mais il ne sait rien du produit :
+ * il dit « 6,90 € reçus », point. Celui-ci donne ce qui permet de réagir — qui,
+ * combien de relevés, quelle note, et le lien direct vers le rapport.
+ *
+ * Sans RESEND_API_KEY, la fonction ne fait rien et ne lève rien : une vente ne
+ * doit jamais échouer parce qu'un mail de notification n'est pas configuré.
+ */
+export async function notifierVente(info: {
+  prenom: string;
+  email: string;
+  token: string;
+  centimes?: number;
+  stats?: Record<string, any>;
+}): Promise<void> {
+  const cle = process.env.RESEND_API_KEY;
+  const dest = process.env.EMAIL_REPLY_TO ?? "nicolas.raoulduval@gmail.com";
+  if (!cle) {
+    console.log(`vente : ${info.prenom} <${info.email}> — pas de RESEND_API_KEY, notification muette`);
+    return;
+  }
+
+  const p = info.stats?.periode ?? {};
+  const note = info.stats?.note_gestion;
+  const montant = info.centimes != null ? (info.centimes / 100).toFixed(2).replace(".", ",") + " €" : "—";
+  const lien = `https://www.franklinai.fr/rapport/${info.token}`;
+
+  const lignes = [
+    `Prénom       ${info.prenom}`,
+    `Email        ${info.email}`,
+    `Montant      ${montant}`,
+    `Relevés      ${p.nb_mois ?? "?"} · ${p.nb_transactions ?? "?"} transactions`,
+    note ? `Note         ${note.note}/${note.sur} — ${note.mention}` : "",
+    "",
+    `Rapport      ${lien}`,
+  ].filter(Boolean).join("\n");
+
+  try {
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${cle}`, "content-type": "application/json" },
+      body: JSON.stringify({
+        from: "Franklin AI <franklin@franklinai.fr>",
+        to: [dest],
+        subject: `Vente — ${info.prenom}, ${montant}`,
+        text: lignes,
+      }),
+    });
+  } catch (e) {
+    console.error("notification de vente :", e);
+  }
+}
