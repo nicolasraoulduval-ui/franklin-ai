@@ -38,22 +38,47 @@ const iso = (d: Date): string => d.toISOString().slice(0, 10);
 const dayDiff = (a: Date, b: Date): number => Math.round((b.getTime() - a.getTime()) / 86400000);
 
 // ---------- catégorisation (même taxonomie et même ordre que stats.py) ----------
+/* Catégorisation par mots-clés génériques, pas par enseignes.
+ *
+ *  La liste précédente était construite à partir d'un seul relevé — Z2M, SnP,
+ *  RETRO FOODING, TABOBINE. Autrement dit : Franklin ne reconnaissait que les
+ *  commerces d'une seule personne. Une cliente a reçu un rapport sans aucune
+ *  catégorie, donc sans graphique et avec trois faits gratuits identiques,
+ *  parce qu'aucun de ses marchands n'était dans cette liste.
+ *
+ *  On classe désormais sur ce qui est stable d'un Français à l'autre : le type
+ *  de commerce dans le libellé, pas le nom de l'enseigne. L'ordre compte, la
+ *  première expression qui correspond gagne — le plus spécifique d'abord. */
 const CATS: Array<[string, RegExp]> = [
-  ["ia_outils", /BASE44|OPENAI|CLAUDE\.AI|RORK|IONOS|INPI/i],
-  ["livraison", /UBER \*EATS|UBER\*EATS/i],
-  ["voyages", /AIR FRANCE|Booking\.com|EDREAMS|RYANAIR/i],
-  ["transport", /UBER ?\*? ?TRIP|SNCF|BLABLACAR|BOLT\.|ESSO|TOTALENERGIES/i],
-  ["courses", /INTERMARCHE|FRANPRIX|PROXI\b|NATURA FORC/i],
-  ["resto_bars", /Z2M|SnP|RETRO FOODING|CHEZ PAPA|POKE|BOBUN|FIVE GUYS|DAROCO|POKAWA|DELICES|MELODIE|BROOKLYN|CAVANI|SEKA|K25\b|SERKOBER|ECLAIRS|TABOBINE|HONGYUN|CHOUBIDOU|MEYCLUB|SODEXO|DALLMAYR|NEOCORNER|HODAS|SUBWAY|MC DONALD|AMORINO|NOLITA|BURLINGUE|AMALFI|DUECUORI|BIRDZ|CHEZ JULIEN|GATE 2|MURO/i],
-  ["abo_telecom", /Free Telecom/i],
-  ["sport", /FITNESS/i],
-  ["musique_video", /Spotify|AMAZON MEDIA/i],
-  ["formation", /AMF PREP|CFA Institute|FRANCE TOURISME/i],
-  ["shopping", /APPLE STORE|APPLE\.COM\/FR|AMAZON EU|AMAZON PAYMENTS|GANT|ATELIER NOELA|FNAC/i],
-  ["soin", /COIFFURE|BARBE|PHARMACIE/i],
-  ["frais_bancaires", /COMMISSION D'INTERVENTION|COTISATION MENSUELLE|INTERETS DEBITEURS|OPTION INTERNAT/i],
-  ["sorties", /PARC LOUVIERE|KUBYK|DOMAINE SAINT|BPIF/i],
+  ["ia_outils", /OPENAI|CHATGPT|CLAUDE|ANTHROPIC|MISTRAL|MIDJOURNEY|PERPLEXITY|CURSOR|GITHUB|VERCEL|BASE44|RORK|IONOS|OVH|NETLIFY|REPLIT|NOTION|FIGMA/i],
+  ["livraison", /UBER ?\*? ?EATS|DELIVEROO|JUST ?EAT|FRICHTI|GLOVO|WOLT|SUSHISHOP LIVR/i],
+  ["voyages", /AIR ?FRANCE|BOOKING|AIRBNB|RYANAIR|EASYJET|TRANSAVIA|VUELING|EDREAMS|EXPEDIA|HOTEL|AUBERGE|LASTMINUTE|KAYAK/i],
+  ["transport", /UBER|BOLT\.|SNCF|RATP|NAVIGO|BLABLACAR|TRAINLINE|OUIGO|FLIXBUS|TAXI|G7|ESSO|TOTALENERGIES|SHELL|AVIA|INTERMARCHE CARBURANT|STATION|PEAGE|AUTOROUTE|VINCI|PARKING|INDIGO|VELIB|LIME|TIER|CITIZ|GETAROUND/i],
+  ["courses", /CARREFOUR|LECLERC|E\.?LECLERC|INTERMARCHE|AUCHAN|LIDL|ALDI|MONOPRIX|FRANPRIX|CASINO|SUPER ?U|HYPER ?U|\bG20\b|PROXI|SPAR|UTILE|COCCINELLE|PICARD|GRAND ?FRAIS|BIOCOOP|NATURALIA|LA VIE CLAIRE|MARCHE|PRIMEUR|BOUCHERIE|FROMAGERIE|POISSONNERIE|NATURA FORC/i],
+  ["resto_bars", /RESTAURANT|BRASSERIE|BISTRO|TRATTORIA|PIZZ|SUSHI|BURGER|KEBAB|TACOS|WOK|POKE|BOWL|BOULANGERIE|PATISSERIE|\bCAFE\b|COFFEE|STARBUCKS|\bBAR\b|\bPUB\b|TAVERNE|CAVE A|TRAITEUR|SNACK|MC ?DONALD|\bKFC\b|SUBWAY|FIVE ?GUYS|POKAWA|AMORINO|DELICES|Z2M|SnP|RETRO FOODING|CHEZ PAPA|BOBUN|DAROCO|MELODIE|BROOKLYN|CAVANI|SEKA|SERKOBER|ECLAIRS|TABOBINE|HONGYUN|CHOUBIDOU|MEYCLUB|SODEXO|DALLMAYR|NEOCORNER|HODAS|NOLITA|BURLINGUE|AMALFI|DUECUORI|BIRDZ|MURO/i],
+  ["abo_telecom", /FREE ?TELECOM|FREE ?MOBILE|ORANGE|\bSFR\b|BOUYGUES|SOSH|RED BY|PRIXTEL|SYMA|LEBARA/i],
+  ["musique_video", /SPOTIFY|DEEZER|NETFLIX|DISNEY|CANAL\+|CANALPLUS|PRIME ?VIDEO|AMAZON ?MEDIA|APPLE ?MUSIC|YOUTUBE|PARAMOUNT|MAX\b|MOLOTOV|AUDIBLE/i],
+  ["sport", /FITNESS|BASIC ?FIT|NEONESS|KEEPCOOL|ON ?AIR|SALLE DE SPORT|\bGYM\b|CLUB SPORT|PISCINE|TENNIS|ESCALADE|STRAVA/i],
+  ["formation", /AMF PREP|CFA INSTITUTE|UDEMY|COURSERA|OPENCLASSROOMS|FORMATION|ECOLE|UNIVERSIT|AUTO ?MOTO ?ECOLE|CODE DE LA ROUTE|FRANCE TOURISME/i],
+  ["shopping", /AMAZON|\bZARA\b|H&M|UNIQLO|BERSHKA|PRIMARK|ASOS|VINTED|SHEIN|\bFNAC\b|DARTY|BOULANGER|DECATHLON|\bIKEA\b|ACTION|CDISCOUNT|LEROY ?MERLIN|CASTORAMA|BRICO|APPLE|GANT|ATELIER NOELA|SEPHORA|NOCIBE|MARIONNAUD/i],
+  ["soin", /PHARMACIE|PARAPHARM|COIFF|BARBE|BARBER|INSTITUT|ONGLERIE|SPA\b|OPTIC|DENTAIRE|DENTISTE|MEDECIN|DOCTEUR|LABORATOIRE|KINE|OSTEO|MUTUELLE|DOCTOLIB/i],
+  ["logement", /\bLOYER\b|\bEDF\b|ENGIE|VEOLIA|\bSUEZ\b|SYNDIC|AGENCE IMMO|FONCIA|NEXITY|CHARGES COPRO|ASSURANCE HABITATION|\bMAIF\b|\bMACIF\b|MATMUT|AXA|ALLIANZ|GMF/i],
+  ["sorties", /CINEMA|\bUGC\b|PATHE|GAUMONT|MK2|THEATRE|CONCERT|SPECTACLE|MUSEE|EXPO|BOWLING|LASER ?GAME|ESCAPE|BILLETRE|DICE|SHOTGUN|PARC LOUVIERE|KUBYK|DOMAINE SAINT|BPIF/i],
+  ["frais_bancaires", /COMMISSION D'INTERVENTION|COTISATION MENSUELLE|INTERETS DEBITEURS|AGIOS|OPTION INTERNAT|FRAIS DE TENUE|FRAIS BANCAIRES/i],
 ];
+
+/** Les clés ci-dessus sont des identifiants techniques. Ces libellés sont ce
+ *  que le rapport a le droit d'écrire — un « resto_bars » qui fuit dans une
+ *  phrase, c'est la couture du logiciel qui dépasse. */
+export const LIBELLES: Record<string, string> = {
+  ia_outils: "outils d'IA", livraison: "livraison de repas", voyages: "voyages",
+  transport: "transports", courses: "courses", resto_bars: "restaurants et bars",
+  abo_telecom: "téléphone et internet", musique_video: "musique et vidéo",
+  sport: "sport", formation: "formation", shopping: "achats", soin: "santé et soin",
+  logement: "logement et énergie", sorties: "sorties", frais_bancaires: "frais bancaires",
+  virement_emis: "virements envoyés", virement_recu: "virements reçus",
+  prelevement: "prélèvements", autre: "non classé",
+};
 
 interface Tx extends RawTransaction {
   cat: string;
