@@ -178,9 +178,13 @@ export function renderRapport(r: Rapport, stats: Stats, prenom: string, dateGen:
   S.push(`<section><div class="wrap"><div class="kicker">Ta signature</div><h2>${esc(r.signature.titre)}</h2>${paras(r.signature.texte)}</div></section>`);
 
   let charts = barChart2(stats) + barChartSalaire(stats) + beneficiaires(stats) + donut(stats);
-  /* Aucun schéma conditionnel n'a pu être produit : on retombe sur celui qui
-     marche toujours, plutôt que de livrer une section « Les schémas » vide. */
-  if (!charts.trim()) charts = rythme(stats);
+  /* Le repli ne se déclenchait qu'à zéro schéma. Constat sur trois vrais
+     rapports : Pierre avec 5 relevés en a eu 4, Pierre avec 1 relevé en a eu 1,
+     Carla avec 1 relevé aucun. Celui à un seul schéma passait donc entre les
+     mailles et livrait une section « Les schémas » quasi vide sur 1 400 mots de
+     texte. On vise trois : en dessous, on complète. */
+  const combien = (charts.match(/class="chart"/g) ?? []).length;
+  if (combien < 3) charts += rythme(stats);
   if (charts.trim())
     S.push(`<section><div class="wrap"><div class="kicker">Les schémas</div><h2>La science confirme.</h2>${charts}</div></section>`);
 
