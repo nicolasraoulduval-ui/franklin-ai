@@ -122,7 +122,7 @@ export default function Analyse() {
       {!preview && etape === 1 && (
         <>
           <TutoExport />
-          <button onClick={() => aller(2)} style={cta}>J&apos;AI MON RELEVÉ →</button>
+          <button onClick={() => aller(2)} style={cta}>J&apos;AI MES RELEVÉS →</button>
         </>
       )}
 
@@ -146,11 +146,14 @@ export default function Analyse() {
       {!preview && etape === 3 && (
         <>
           <h1 style={{ fontFamily: gab, fontWeight: 900, fontSize: 38, lineHeight: 1.05 }}>
-            Fais parler<br />ton relevé.
+            Fais parler<br />tes relevés.
           </h1>
           <p style={{ color: "#6b6f7e" }}>
-            Un seul relevé suffit — mais plus il y en a, plus Franklin a de choses à raconter.
-            Ton fichier est analysé puis <strong>supprimé immédiatement</strong> : rien n&apos;est conservé, rien n&apos;entraîne aucun modèle.
+            Dépose-en <strong>trois à six</strong>. Avec un seul, Franklin devine ; avec six, il démontre —
+            il voit comment tu évolues, ce que tu répètes, et les mois qui ne ressemblent pas aux autres.
+            <strong> Même prix quel que soit le nombre.</strong>
+            <br />
+            Tes fichiers sont analysés puis <strong>supprimés immédiatement</strong> : rien n&apos;est conservé, rien n&apos;entraîne aucun modèle.
           </p>
 
           <div
@@ -158,7 +161,7 @@ export default function Analyse() {
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => { e.preventDefault(); setFiles([...files, ...Array.from(e.dataTransfer.files).filter((f) => f.name.toLowerCase().endsWith(".pdf"))]); }}
             style={{ border: "2px dashed #14161f", background: "#edf1fb", padding: "36px 20px", textAlign: "center", cursor: "pointer", margin: "22px 0", fontFamily: mono, fontSize: 14 }}>
-            {files.length ? files.map((f) => f.name).join(" · ") : "GLISSE TES RELEVÉS PDF ICI OU CLIQUE"}
+            {files.length ? files.map((f) => f.name).join(" · ") : "GLISSE TES 3 À 6 DERNIERS RELEVÉS PDF"}
             <input ref={fileRef} type="file" accept="application/pdf,.pdf" multiple hidden
               onChange={(e) => { const f = Array.from(e.target.files ?? []); if (f.length) suivre("fichier_depose", { nb: f.length }); setFiles([...files, ...f]); }} />
           </div>
