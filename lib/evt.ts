@@ -10,6 +10,8 @@
  * à reconstituer un tunnel.
  */
 
+import { calculerNote } from "./note";
+
 const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -115,7 +117,15 @@ export async function notifierVente(info: {
   }
 
   const p = info.stats?.periode ?? {};
-  const note = info.stats?.note_gestion;
+  /* La note n'est pas stockée : elle se recalcule à partir des mêmes chiffres.
+     Si le calcul échoue pour une raison quelconque, on envoie le mail sans elle
+     plutôt que de perdre la notification. */
+  let note: { note: number; sur: number; mention: string } | null = null;
+  try {
+    if (info.stats) note = calculerNote(info.stats as any);
+  } catch {
+    /* une notification vaut mieux qu'une notification parfaite */
+  }
   const montant = info.centimes != null ? (info.centimes / 100).toFixed(2).replace(".", ",") + " €" : "—";
   const lien = `https://www.franklinai.fr/rapport/${info.token}`;
 
