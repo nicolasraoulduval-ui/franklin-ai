@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { getRecord, updateRecord } from "../../../lib/db";
+import { notifierVente } from "../../../lib/evt";
 
 export const runtime = "nodejs";
 
@@ -37,7 +38,19 @@ export async function POST(req: Request) {
     const rid = event.data?.object?.metadata?.report_id;
     if (rid) {
       const rec = await getRecord(rid);
-      if (rec && rec.status === "preview_ready") await updateRecord(rid, { status: "paid" });
+      if (rec && rec.status === "preview_ready") {
+        await updateRecord(rid, { status: "paid" });
+        /* Une vente sans notification, c'est une vente qu'on découvre trois jours
+           plus tard en fouillant la base. On prévient tout de suite, avec de quoi
+           réagir : qui, combien de relevés, quelle note, et le lien du rapport. */
+        await notifierVente({
+          prenom: rec.prenom,
+          email: rec.email,
+          token: rid,
+          centimes: event.data?.object?.amount_total,
+          stats: rec.stats as Record<string, unknown>,
+        });
+      }
     }
   }
   return NextResponse.json({ received: true });
