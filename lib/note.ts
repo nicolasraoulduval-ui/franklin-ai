@@ -115,11 +115,16 @@ export function calculerNote(stats: Stats): NoteGestion {
   if (credits > 0 && nbMois > 0 && abosMensuel > 0) {
     const revenuMensuel = credits / nbMois;
     const part = (100 * abosMensuel) / revenuMensuel;
+    /* Le libellé doit porter la mesure, pas seulement le montant. Un « 105,56 €
+       par mois » affiché à côté d'un 4/4 se lit comme une contradiction ; le
+       même montant rapporté aux revenus (« 3 % de ce qui rentre ») explique la
+       note. Le critère mesure une part, il doit afficher une part. */
+    const pc = part < 10 ? part.toFixed(1).replace(".", ",").replace(",0", "") : String(Math.round(part));
     sous.push({
       matiere: "Résistance aux abonnements",
       note: palier(part, [[3, 4], [6, 3], [10, 2], [15, 1]], true),
       sur: 4,
-      mesure: `${eur(abosMensuel)} € par mois partent sans que tu décides`,
+      mesure: `${eur(abosMensuel)} € par mois d'abonnements, soit ${pc} % de ce qui rentre`,
     });
   }
 
