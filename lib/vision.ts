@@ -23,14 +23,25 @@ const SCHEMA = {
       amount: { type: "number", description: "montant positif, exactement comme imprimé" },
       side: { type: "string", enum: ["debit", "credit"] },
       op_date: { type: "string", description: "date d'opération dd/mm si différente" },
-      /* op_time a été retiré du schéma. Vérifié sur cinq relevés Société Générale
-         réels : un relevé ne contient AUCUNE heure, ni pour les paiements carte,
-         ni pour les virements. Une ligne porte deux dates, un libellé, un montant.
-         Le champ existait quand même, et le modèle le remplissait — il inventait.
-         Ces heures nourrissaient ensuite virements_nocturnes et ressortaient dans
-         les rapports comme des faits. Le validateur de chiffres orphelins ne
-         pouvait rien voir : il vérifie que le rapport ne dépasse pas le stats.json,
-         pas que le stats.json dit la vérité. La fabrication avait lieu en amont. */
+      /* op_time a été retiré du schéma, mais pas pour la raison écrite ici
+         auparavant — cette note disait qu'un relevé ne contient aucune heure,
+         et c'était faux. Vérification refaite ligne à ligne sur cinq relevés
+         Société Générale :
+
+         — les paiements par carte ne portent jamais d'heure. Le modèle en
+           produisait quand même, et ces heures ressortaient dans les rapports
+           comme des faits. C'est cette fabrication qu'on supprime ici ;
+         — les virements instantanés, eux, en portent une, dans leur bloc de
+           détail : « DATE: 08/05/2026 01:55 ». Elle est réelle.
+
+         D'où le partage : le modèle ne remplit plus ce champ, mais enrich.ts
+         relit l'heure dans le texte du détail par expression régulière. Ce qui
+         est imprimé est conservé, ce qui est deviné disparaît — et c'est du code
+         qui tranche, pas une consigne.
+
+         Le validateur de chiffres orphelins ne pouvait rien voir : il vérifie
+         que le rapport ne dépasse pas le stats.json, pas que le stats.json dit
+         la vérité. La fabrication avait lieu en amont. */
     }, required: ["date", "label", "amount", "side"] } },
   },
   required: ["banque", "titulaire", "meta", "transactions"],
