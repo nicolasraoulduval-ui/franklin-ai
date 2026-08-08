@@ -17,7 +17,7 @@ function barChart2(s: Stats): string {
       <div class="bcol"><div class="bval mono">${r.nb}</div><div class="bar" style="height:210px"></div><div class="blab mono">RESTOS &amp; BARS</div></div>
       <div class="bcol"><div class="bval mono">${c.nb}</div><div class="bar tiny" style="height:${h2}px"></div><div class="blab mono">COURSES</div></div>
       <div class="annot"><svg viewBox="0 0 120 60" width="110"><path d="M8 8 q60 -6 92 34" fill="none" stroke="#14161f" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="1 5"/><path d="M100 42 l0 -12 M100 42 l-12 -2" fill="none" stroke="#14161f" stroke-width="2.2" stroke-linecap="round"/></svg>
-      <div class="mono">${c.nb === 0 ? "zéro passage.<br>ta cuisine est décorative." : c.nb * 4 <= r.nb ? "on la voit à peine.<br>comme ta poêle." : `${Math.round(r.nb / Math.max(c.nb, 1))} fois plus souvent.<br>ta poêle a des horaires.`}</div></div>
+      <div class="mono">${c.nb === 0 ? "Zéro passage.<br>Ta cuisine est décorative." : c.nb * 4 <= r.nb ? "On la voit à peine.<br>Comme ta poêle." : `${Math.round(r.nb / Math.max(c.nb, 1))} fois plus souvent.<br>Ta poêle a des horaires.`}</div></div>
     </div></div>`;
 }
 
@@ -46,6 +46,51 @@ function barChartSalaire(s: Stats): string {
  *  La chute se calcule : selon que quelqu'un capte la majorité ou que tout est
  *  réparti, ce n'est pas la même phrase. Une légende écrite d'avance finit
  *  toujours par contredire le dessin de quelqu'un. */
+/* Le graphique de dernier recours.
+ *
+ *  Les quatre autres schémas sont conditionnels : ils exigent des catégories,
+ *  plusieurs salaires ou plusieurs bénéficiaires. Une cliente avec un seul
+ *  relevé et des marchands inconnus n'a eu AUCUN graphique — et elle l'a dit.
+ *  Celui-ci ne dépend que des dates et des montants : il y en a toujours. */
+function rythme(s: Stats): string {
+  const par = (s.par_mois ?? {}) as Record<string, { debits: number; credits: number; net: number }>;
+  const mois = Object.entries(par);
+  if (mois.length >= 2) {
+    const mx = Math.max(...mois.map(([, m]) => Math.max(m.debits, m.credits)), 1);
+    const cols = mois.map(([nom, m]) => {
+      const hd = Math.max(6, Math.round((190 * m.debits) / mx));
+      const hc = Math.max(6, Math.round((190 * m.credits) / mx));
+      return `<div class="bcol"><div class="paire">
+        <i class="cred" style="height:${hc}px" title="entré"></i><i class="deb" style="height:${hd}px" title="sorti"></i>
+      </div><div class="blab mono">${esc(nom.slice(0, 5))}</div></div>`;
+    }).join("");
+    return `<div class="chart"><div class="chart-title mono">CE QUI ENTRE, CE QUI SORT, MOIS PAR MOIS</div>
+      <style>.paire{display:flex;align-items:flex-end;gap:4px}
+      .paire i{display:block;width:15px;border:2px solid #14161f;border-radius:3px 3px 0 0}
+      .paire i.cred{background:#9cc3ff}.paire i.deb{background:#2f4df0}
+      .lg2{margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6b6f7e}</style>
+      <div class="bars6">${cols}</div>
+      <div class="lg2">Bleu clair : ce qui entre. Bleu foncé : ce qui sort.</div></div>`;
+  }
+
+  /* Un seul relevé : on montre les jours de la semaine, toujours calculables. */
+  const j = (s.carte_par_jour_semaine ?? {}) as Record<string, { nb: number; total: number }>;
+  const jours = Object.entries(j).filter(([, x]) => x.nb > 0);
+  if (jours.length < 3) return "";
+  const mx = Math.max(...jours.map(([, x]) => x.total), 1);
+  const pire = jours.reduce((b, c) => (c[1].total > b[1].total ? c : b));
+  const cols = jours.map(([nom, x]) => {
+    const h = Math.max(6, Math.round((190 * x.total) / mx));
+    const chaud = nom === pire[0];
+    return `<div class="bcol"><div class="bval mono${chaud ? " red" : ""}">${x.nb}</div>
+      <div class="bar${chaud ? " alert" : ""}" style="height:${h}px"></div>
+      <div class="blab mono">${esc(nom.slice(0, 3).toUpperCase())}</div></div>`;
+  }).join("");
+  return `<div class="chart"><div class="chart-title mono">TES PAIEMENTS CARTE, PAR JOUR DE LA SEMAINE</div>
+    <div class="bars6">${cols}</div>
+    <div class="lg2" style="margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6b6f7e">Le ${esc(pire[0])} te coûte le plus cher.</div></div>`;
+}
+
 function beneficiaires(s: Stats): string {
   const b = s.top_beneficiaires;
   const liste: Array<{ beneficiaire: string; nb: number; total: number }> = b?.liste ?? [];
@@ -75,7 +120,7 @@ function beneficiaires(s: Stats): string {
       ? `${esc(court(top[0].beneficiaire))} capte ${part} % de ce que tu envoies. Les autres se partagent le reste.`
       : liste.length >= 6
         ? `${liste.length} destinataires différents. Tu ne vires pas, tu distribues.`
-        : "personne ne domine vraiment. l'argent circule, sans favori déclaré.";
+        : "Personne ne domine vraiment. L'argent circule, sans favori déclaré.";
 
   return `<div class="chart"><div class="chart-title mono">À QUI TU VIRES LE PLUS</div>
     <style>
@@ -107,7 +152,7 @@ function donut(s: Stats): string {
       <div class="donut" style="background:conic-gradient(var(--blue) 0 ${deg}deg, var(--hl) ${deg}deg 360deg)"><div class="hole mono">TOI</div></div>
       <div class="legend mono"><div><span class="dot d1"></span>TOI-MÊME — ${nSelf} VIREMENTS</div>
       <div><span class="dot d2"></span>LE RESTE DU MONDE — ${nOther}</div>
-      <div class="legend-note">${domine ? "ton principal bénéficiaire, c'est toi. fidèle." : `${part} % de tes virements finissent chez toi. l'argent fait des allers-retours avant de choisir.`}</div></div>
+      <div class="legend-note">${domine ? "Ton principal bénéficiaire, c'est toi. Fidèle." : `${part} % de tes virements finissent chez toi. L'argent fait des allers-retours avant de choisir.`}</div></div>
     </div></div>`;
 }
 
@@ -132,7 +177,10 @@ export function renderRapport(r: Rapport, stats: Stats, prenom: string, dateGen:
 
   S.push(`<section><div class="wrap"><div class="kicker">Ta signature</div><h2>${esc(r.signature.titre)}</h2>${paras(r.signature.texte)}</div></section>`);
 
-  const charts = barChart2(stats) + barChartSalaire(stats) + beneficiaires(stats) + donut(stats);
+  let charts = barChart2(stats) + barChartSalaire(stats) + beneficiaires(stats) + donut(stats);
+  /* Aucun schéma conditionnel n'a pu être produit : on retombe sur celui qui
+     marche toujours, plutôt que de livrer une section « Les schémas » vide. */
+  if (!charts.trim()) charts = rythme(stats);
   if (charts.trim())
     S.push(`<section><div class="wrap"><div class="kicker">Les schémas</div><h2>La science confirme.</h2>${charts}</div></section>`);
 
