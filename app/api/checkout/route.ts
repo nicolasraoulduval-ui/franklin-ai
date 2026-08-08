@@ -31,15 +31,27 @@ export async function POST(req: Request) {
     "line_items[0][price_data][product_data][name]": "Rapport Franklin — ton portrait financier",
     "line_items[0][price_data][product_data][description]":
       "Franklin a tout lu. Il n'a rien oublié, et absolument aucune pudeur.",
-    /* Stripe affiche cette image dans le récapitulatif : c'est le dernier écran
-       avant de payer, et il était vide. L'URL doit être publiquement accessible.
+    /* Stripe affiche cette image dans le récapitulatif. Mesuré dans le DOM de
+       checkout.stripe.com : le conteneur (.LineItem-imageContainer) fait 42x42
+       pixels, fixes, et l'image y est contenue sans être recadrée. Trois
+       conséquences, toutes vérifiées plutôt que supposées :
 
-       Le paramètre de version n'est pas décoratif. Stripe télécharge l'image une
-       fois et la sert ensuite depuis son propre CDN : remplacer le fichier à la
-       même URL ne change rien, le client continue de voir l'ancienne. Il faut
-       incrémenter ce numéro à chaque fois que le visuel change. */
+       — une image en portrait perd de la largeur (1000x1300 était rendue en
+         32x42, soit 40 % de surface en moins qu'un carré). L'image doit être
+         carrée ;
+       — à 42 pixels, un texte ou un décor ne se lit pas. Seul un visage cadré
+         serré survit ;
+       — un fond blanc disparaît dans la page, elle aussi blanche. D'où le fond
+         bleu plein.
+
+       Il n'existe aucun réglage Stripe pour agrandir cette vignette : la seule
+       alternative serait de quitter Checkout hébergé pour Elements.
+
+       Enfin, changer de nom de fichier n'est pas de la coquetterie. Stripe
+       télécharge l'image une fois et la sert depuis son propre CDN : remplacer
+       le fichier à la même URL ne change rien pour le client. */
     "line_items[0][price_data][product_data][images][0]":
-      "https://www.franklinai.fr/checkout-franklin.png?v=3",
+      "https://www.franklinai.fr/checkout-franklin-2.png",
     "line_items[0][quantity]": "1",
     /* Affiche « Ajouter un code promo » sur la page de paiement.
        Les codes se créent dans le Dashboard Stripe (Produits → Coupons),
