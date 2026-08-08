@@ -108,6 +108,12 @@ export default function TutoExport() {
         </div>
       )}
 
+      <p style={{ textAlign: "center", fontSize: 13.5, color: "#6b6f7e", margin: "0 0 14px", lineHeight: 1.6 }}>
+        Ta banque n&apos;est pas dans la liste ? <strong style={{ color: "#14161f" }}>Aucune importance.</strong>{" "}
+        Franklin lit le relevé PDF de n&apos;importe quelle banque — le chemin pour l&apos;exporter est
+        toujours le même : ton compte, tes documents, ton relevé.
+      </p>
+
       <details style={{ marginBottom: 6 }}>
         <summary style={{ cursor: "pointer", fontSize: 14, color: "#6b6f7e", textAlign: "center", listStyle: "none" }}>
           Besoin d&apos;aide ? <u style={{ textUnderlineOffset: 3 }}>Voir le tutoriel écrit</u>
