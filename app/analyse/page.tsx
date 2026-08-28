@@ -160,17 +160,30 @@ export default function Analyse() {
             onClick={() => fileRef.current?.click()}
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => { e.preventDefault(); setFiles([...files, ...Array.from(e.dataTransfer.files).filter((f) => f.name.toLowerCase().endsWith(".pdf"))]); }}
-            style={{ border: "2px dashed #14161f", background: "#edf1fb", padding: "36px 20px", textAlign: "center", cursor: "pointer", margin: "22px 0", fontFamily: mono, fontSize: 14 }}>
-            {files.length ? files.map((f) => f.name).join(" · ") : "GLISSE TES 3 À 6 DERNIERS RELEVÉS PDF"}
+            /* « Glisse » ne veut rien dire sur un téléphone : on y appuie, on n'y
+               glisse rien. Le verbe est donc neutre, vrai sur les deux supports.
+               wordBreak protège la zone quand un nom de fichier de relevé bancaire,
+               souvent long, s'affiche sur 342 px de large. */
+            style={{ border: "2px dashed #14161f", background: "#edf1fb", padding: "32px 18px", textAlign: "center", cursor: "pointer", margin: "22px 0", fontFamily: mono, fontSize: 14, lineHeight: 1.5, wordBreak: "break-word" }}>
+            {files.length ? files.map((f) => f.name).join(" · ") : "CHOISIS TES 3 À 6 DERNIERS RELEVÉS PDF"}
             <input ref={fileRef} type="file" accept="application/pdf,.pdf" multiple hidden
               onChange={(e) => { const f = Array.from(e.target.files ?? []); if (f.length) suivre("fichier_depose", { nb: f.length }); setFiles([...files, ...f]); }} />
           </div>
 
+          {/* fontSize 16 n'est pas un choix esthétique. En dessous de 16 px, Safari
+              iOS zoome automatiquement à la mise au point du champ, décale toute la
+              page et ne revient pas en arrière : le client se retrouve à saisir son
+              email dans une page à moitié sortie de l'écran. C'est le bug mobile le
+              plus discret et le plus coûteux qui soit, et il se corrige ici.
+              type="email" et inputMode font apparaître le clavier avec l'arobase ;
+              autoCapitalize évite le « Ton@email.fr » que corrige personne. */}
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <input placeholder="Ton prénom" value={prenom} onChange={(e) => setPrenom(e.target.value)}
-              style={{ flex: "1 1 140px", padding: "12px 14px", border: "2px solid #14161f", fontFamily: mono, fontSize: 14 }} />
+              autoComplete="given-name" autoCapitalize="words"
+              style={{ flex: "1 1 140px", padding: "14px 14px", border: "2px solid #14161f", fontFamily: mono, fontSize: 16 }} />
             <input placeholder="ton@email.fr" value={email} onChange={(e) => setEmail(e.target.value)}
-              style={{ flex: "2 1 220px", padding: "12px 14px", border: "2px solid #14161f", fontFamily: mono, fontSize: 14 }} />
+              type="email" inputMode="email" autoComplete="email" autoCapitalize="none" autoCorrect="off" spellCheck={false}
+              style={{ flex: "2 1 220px", padding: "14px 14px", border: "2px solid #14161f", fontFamily: mono, fontSize: 16 }} />
           </div>
 
           <button onClick={analyser} disabled={busy} style={cta}>
