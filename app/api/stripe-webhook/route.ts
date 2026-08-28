@@ -43,9 +43,18 @@ export async function POST(req: Request) {
         /* Une vente sans notification, c'est une vente qu'on découvre trois jours
            plus tard en fouillant la base. On prévient tout de suite, avec de quoi
            réagir : qui, combien de relevés, quelle note, et le lien du rapport. */
+        /* L'email vient désormais de Stripe : c'est le seul qu'on ait, et c'est
+           aussi le seul qui ait été confirmé avant un paiement. On retombe sur
+           celui de l'enregistrement pour les commandes créées avant le retrait
+           du champ. */
+        const emailClient =
+          event.data?.object?.customer_details?.email ||
+          event.data?.object?.customer_email ||
+          rec.email ||
+          "non communiqué";
         await notifierVente({
           prenom: rec.prenom,
-          email: rec.email,
+          email: emailClient,
           token: rid,
           centimes: event.data?.object?.amount_total,
           stats: rec.stats as Record<string, unknown>,
