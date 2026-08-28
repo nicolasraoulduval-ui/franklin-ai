@@ -65,12 +65,18 @@ html = html.slice(0, avantEtapes) + SCHEMAS_LANDING + "\n\n" + html.slice(avantE
 html = html.replace("</style>", CSS_V2 + CSS_SCHEMAS + CSS_BANDEAU + CSS_FINAL + "\n</style>");
 html = html.replace("</body>", JS_V2 + "\n</body>");
 
-// 4 bis · le bandeau d'extraits puis le dernier appel, en toute fin de page.
+// 4 bis · le bandeau d'extraits puis le dernier appel, AVANT le pied de page.
 //         Quelqu'un qui arrive en bas a tout lu sans cliquer : lui répéter la
 //         promesse ne sert à rien, seule la curiosité peut encore le faire bouger.
-const finFooter = html.lastIndexOf("</footer>");
-const apresFooter = finFooter >= 0 ? finFooter + "</footer>".length : html.indexOf("</body>");
-html = html.slice(0, apresFooter) + "\n" + BANDEAU_EXTRAITS + "\n" + CTA_FINAL + html.slice(apresFooter);
+//
+//         Ils étaient placés après le </footer>. Sur un écran de téléphone, la
+//         page fait onze hauteurs d'écran : le lecteur voit apparaître les
+//         mentions légales, comprend que c'est fini, et remonte ou sort. Il ne
+//         verra jamais ce qui suit. Le pied de page est une fin de page, pas un
+//         séparateur — on ne met rien derrière lui.
+const finFooter = html.lastIndexOf("<footer");
+const avantFooter = finFooter >= 0 ? finFooter : html.indexOf("</body>");
+html = html.slice(0, avantFooter) + "\n" + BANDEAU_EXTRAITS + "\n" + CTA_FINAL + "\n" + html.slice(avantFooter);
 
 // 5 · le prix reste écrit en dur dans la chaîne héritée ; on le réaligne
 //     sur la source unique au cas où il subsisterait une mention ailleurs
