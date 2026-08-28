@@ -103,8 +103,9 @@ export async function POST(req: Request) {
   const prenom = String(form.get("prenom") ?? "").trim() || "toi";
   const files = form.getAll("files").filter((f): f is File => f instanceof File);
 
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
-    return NextResponse.json({ error: "email invalide" }, { status: 400 });
+  /* L'email n'est plus demandé avant l'aperçu : le rapport ne s'expédie plus,
+     et Stripe le collecte au paiement. Le champ reste accepté si un appel plus
+     ancien l'envoie encore, mais il ne bloque plus personne. */
   if (!files.length || files.length > MAX_FILES)
     return NextResponse.json({ error: `1 à ${MAX_FILES} relevés PDF` }, { status: 400 });
   for (const f of files)
