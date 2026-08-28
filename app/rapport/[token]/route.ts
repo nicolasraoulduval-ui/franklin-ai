@@ -164,7 +164,7 @@ export async function GET(req: Request, { params }: { params: { token: string } 
   .bulletin tr:last-child{border-bottom:none}
   .bulletin td{padding:0;border-bottom:none}
   .bulletin td:first-child{font-family:'Gabarito',sans-serif;font-weight:900;font-size:19px;line-height:1.15;padding-right:78px}
-  .bulletin td.note{position:absolute;top:14px;right:18px;font-size:25px}
+  .bulletin td.note{position:absolute;top:13px;right:18px;width:auto;font-size:25px;text-align:right}
   .bulletin td.appr{margin-top:9px;font-size:15.5px;line-height:1.55}
 }
 </style>`;
