@@ -19,7 +19,7 @@ export default function Confidentialite() {
       </ul>
       <h2>Ce que nous conservons</h2>
       <ul>
-        <li>Ton prénom et ton email. Le rapport ne t&apos;est plus envoyé par courriel : il s&apos;affiche directement et se télécharge en PDF. L&apos;email ne sert qu&apos;à te recontacter si quelque chose se passe mal avec ta commande.</li>
+        <li>Ton prénom, uniquement pour te tutoyer dans le rapport. Nous ne te demandons plus ton email : le rapport s&apos;affiche directement et se télécharge en PDF, il n&apos;est jamais expédié. Si tu paies, Stripe collecte une adresse pour t&apos;envoyer ton reçu — elle nous est transmise avec la confirmation de paiement et ne sert qu&apos;à te recontacter en cas de problème sur ta commande.</li>
         <li>Les statistiques agrégées et le rapport généré, derrière un lien privé.</li>
         <li>Le tout est <strong>supprimé automatiquement 30 jours</strong> après l&apos;analyse.</li>
       </ul>
