@@ -54,7 +54,8 @@ function Ecran({ lignes, cible }: { lignes: string[]; cible: number }) {
           background: i === cible ? "#9cc3ff" : "#fff",
           opacity: i === cible ? 1 : 0.5,
           display: "flex", alignItems: "center", padding: "0 8px",
-          fontFamily: mono, fontSize: 8.5, fontWeight: 700,
+          fontFamily: mono, fontSize: "clamp(8.5px,2.7vw,12px)", fontWeight: 700,
+          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
         }}>{l}</div>
       ))}
       <div style={{
@@ -71,7 +72,7 @@ export default function TutoExport() {
   const [b, setB] = useState(BANQUES[0]);
   return (
     <>
-      <h1 style={{ fontFamily: gab, fontWeight: 900, fontSize: 34, lineHeight: 1.05 }}>
+      <h1 style={{ fontFamily: gab, fontWeight: 900, fontSize: "clamp(28px,7.5vw,34px)", lineHeight: 1.05 }}>
         Récupérer tes relevés,<br />c&apos;est une minute.
       </h1>
       <p style={{ color: "#6b6f7e", margin: "10px 0 22px" }}>
@@ -93,7 +94,11 @@ export default function TutoExport() {
           <iframe src={VIDEO} style={{ width: "100%", height: "100%", border: 0 }} allowFullScreen title="Tutoriel" />
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 18 }}>
+        /* Trois colonnes fixes donnaient 106 px par carte sur un téléphone, avec
+           des libellés d'écran en 8,5 px : le tutoriel censé débloquer le client
+           devenait le premier endroit où il décroche. auto-fit empile les cartes
+           sous 620 px et les remet côte à côte dès qu'il y a la place. */
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 12, marginBottom: 18 }}>
           {b.ecrans.map((lignes, i) => (
             <div key={i} style={{ border: "2.5px solid #14161f", borderRadius: 12, overflow: "hidden", background: "#fff" }}>
               <Ecran lignes={lignes} cible={b.cible[i]} />
