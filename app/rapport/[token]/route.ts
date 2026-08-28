@@ -151,6 +151,24 @@ export async function GET(req: Request, { params }: { params: { token: string } 
      fabrication et recharge quand elle est finie. */
   if (!rec.report_html) return new Response(ATTENTE, { headers: { "content-type": "text/html; charset=utf-8" } });
 
+  /* Le HTML d'un rapport est figé au moment de sa fabrication, CSS compris :
+     une correction de style ne rattrape jamais les rapports déjà vendus. Or
+     celle-ci est visible — sans elle, le bulletin s'affiche en trois colonnes
+     de 132 px sur un téléphone. On la réinjecte donc au service, et seulement
+     si elle manque, pour que les anciens clients en profitent aussi. */
+  const RATTRAPAGE_MOBILE = `<style>
+@media(max-width:620px){
+  table.bulletin,.bulletin tbody,.bulletin tr,.bulletin td,.bulletin th{display:block;width:100%}
+  .bulletin tr:first-child{display:none}
+  .bulletin tr{position:relative;padding:16px 18px;border-bottom:2px solid #14161f}
+  .bulletin tr:last-child{border-bottom:none}
+  .bulletin td{padding:0;border-bottom:none}
+  .bulletin td:first-child{font-family:'Gabarito',sans-serif;font-weight:900;font-size:19px;line-height:1.15;padding-right:78px}
+  .bulletin td.note{position:absolute;top:14px;right:18px;font-size:25px}
+  .bulletin td.appr{margin-top:9px;font-size:15.5px;line-height:1.55}
+}
+</style>`;
+
   const lien = `https://www.franklinai.fr/rapport/${params.token}`;
   const ajouts = partage(lien) + BOUTON_PDF;
   let page = rec.report_html ?? "";
@@ -159,6 +177,11 @@ export async function GET(req: Request, { params }: { params: { token: string } 
     ? page.replace(/(<body[^>]*>)/, "$1" + BARRE_HAUT)
     : BARRE_HAUT + page;
   page = page.includes("</body>") ? page.replace("</body>", ajouts + "</body>") : page + ajouts;
+  if (!page.includes(".bulletin td.appr{margin-top")) {
+    page = page.includes("</head>")
+      ? page.replace("</head>", RATTRAPAGE_MOBILE + "</head>")
+      : RATTRAPAGE_MOBILE + page;
+  }
   return new Response(page, { headers: { "content-type": "text/html; charset=utf-8" } });
 }
 
