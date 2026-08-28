@@ -58,12 +58,18 @@ export async function POST(req: Request) {
        ce qui permet de faire un tarif de lancement sans toucher au prix
        affiché sur le site — et de mesurer qui vient d'où. */
     allow_promotion_codes: "true",
-    customer_email: rec.email,
     success_url: `${origin}/rapport/${report_id}?paid=1`,
     cancel_url: `${origin}/analyse`,
     "metadata[report_id]": report_id,
     "metadata[prix]": PRIX_AFFICHE,
   });
+  /* On ne pré-remplit l'email que si on en a un — les anciens enregistrements
+     en ont, les nouveaux non. Stripe le demande lui-même quand le paramètre est
+     absent, et cet email-là est validé avant le paiement : plus fiable que celui
+     tapé au pouce dans notre formulaire. Envoyer une chaîne vide ferait échouer
+     la création de la session. */
+  if (rec.email && rec.email.includes("@")) body.set("customer_email", rec.email);
+
   const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",
     headers: { Authorization: `Bearer ${sk}`, "content-type": "application/x-www-form-urlencoded" },
