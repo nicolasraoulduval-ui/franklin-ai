@@ -41,7 +41,6 @@ export default function Analyse() {
   const [etape, setEtape] = useState(1);
   useEffect(() => { suivre("analyse_etape_1"); }, []);
   const [files, setFiles] = useState<File[]>([]);
-  const [email, setEmail] = useState("");
   const [prenom, setPrenom] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -53,12 +52,10 @@ export default function Analyse() {
   const analyser = async () => {
     setError("");
     if (!files.length) { setError("Ajoute au moins un relevé PDF."); return; }
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setError("Email invalide."); return; }
     setBusy(true);
     suivre("upload_lance", { nb_releves: files.length });
     const fd = new FormData();
     files.forEach((f) => fd.append("files", f));
-    fd.append("email", email);
     fd.append("prenom", prenom);
     try {
       const r = await fetch("/api/upload", { method: "POST", body: fd });
@@ -170,21 +167,18 @@ export default function Analyse() {
               onChange={(e) => { const f = Array.from(e.target.files ?? []); if (f.length) suivre("fichier_depose", { nb: f.length }); setFiles([...files, ...f]); }} />
           </div>
 
-          {/* fontSize 16 n'est pas un choix esthétique. En dessous de 16 px, Safari
-              iOS zoome automatiquement à la mise au point du champ, décale toute la
-              page et ne revient pas en arrière : le client se retrouve à saisir son
-              email dans une page à moitié sortie de l'écran. C'est le bug mobile le
-              plus discret et le plus coûteux qui soit, et il se corrige ici.
-              type="email" et inputMode font apparaître le clavier avec l'arobase ;
-              autoCapitalize évite le « Ton@email.fr » que corrige personne. */}
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <input placeholder="Ton prénom" value={prenom} onChange={(e) => setPrenom(e.target.value)}
-              autoComplete="given-name" autoCapitalize="words"
-              style={{ flex: "1 1 140px", padding: "14px 14px", border: "2px solid #14161f", fontFamily: mono, fontSize: 16 }} />
-            <input placeholder="ton@email.fr" value={email} onChange={(e) => setEmail(e.target.value)}
-              type="email" inputMode="email" autoComplete="email" autoCapitalize="none" autoCorrect="off" spellCheck={false}
-              style={{ flex: "2 1 220px", padding: "14px 14px", border: "2px solid #14161f", fontFamily: mono, fontSize: 16 }} />
-          </div>
+          {/* L'email a été retiré d'ici. Il ne servait plus à rien : le rapport
+              s'affiche et se télécharge, il n'est plus expédié. Le demander avant
+              l'aperçu, c'était un champ de friction sur la seule étape où le
+              visiteur n'a encore rien reçu — et le champ le plus pénible à remplir
+              au pouce. Stripe le réclame de toute façon au paiement, et le sien
+              est vérifié : plus de « .fr » tapé à la place de « .com ».
+
+              fontSize 16 reste indispensable : en dessous, Safari iOS zoome à la
+              mise au point, décale la page et n'y revient pas. */}
+          <input placeholder="Ton prénom" value={prenom} onChange={(e) => setPrenom(e.target.value)}
+            autoComplete="given-name" autoCapitalize="words"
+            style={{ width: "100%", padding: "14px", border: "2px solid #14161f", fontFamily: mono, fontSize: 16 }} />
 
           <button onClick={analyser} disabled={busy} style={cta}>
             {busy ? "FRANKLIN LIT TON RELEVÉ…" : "FAIRE PARLER MON RELEVÉ →"}
