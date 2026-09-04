@@ -1,17 +1,3 @@
-    /* Ce que la lecture du relevé a compris prime : elle voit le document.
-       À défaut, on lit le libellé nous-mêmes, avec les motifs de douze banques.
-       Les deux se complètent — la lecture donne souvent le commerçant sans le
-       type, le libellé donne souvent le type sans le commerçant. */
-    const lu = lireLibelle(lab, v.side);
-    let type = v.op_type && v.op_type !== "autre" ? v.op_type : lu.type;
-    let merchant: string | null = nettoyerMarchand(v.merchant) ?? lu.merchant;
-    const op_date: string | null = v.op_date || lu.op_date;
-
-    /* Dernier filet : un débit avec un commerçant mais sans nature reconnue est
-       presque toujours un achat par carte. Le classer ainsi vaut mieux que de le
-       laisser en « autre », où il devient invisible pour le rapport. */
-    if (type === "autre" && v.side === "debit" && merchant) type = "carte";
-
 /** Enrichissement des transactions extraites par vision -> RawTransaction[] (schéma du moteur). */
 import type { RawTransaction, Side } from "./stats";
 
@@ -81,7 +67,23 @@ function nettoyerMarchand(m: string | null | undefined): string | null {
   let s = String(m);
   for (const [re, par] of RESIDUS) s = s.replace(re, par);
   s = s.replace(/\s{2,}/g, " ").trim().replace(/[\s,;.-]+$/, "");
+  s = sansPSP(s);
   return s.length >= 2 ? s : null;
+}
+
+/* L'astérisque sépare parfois le prestataire de paiement du commerçant :
+   « HPY*L'APPAC » (HiPay devant l'enseigne), « AMZN Mktp FR*308J » (le code de
+   commande derrière). Mais il fait aussi partie de vrais noms — « UBER *EATS »,
+   « Google *temporary Hold » — et les couper serait pire que les garder. On ne
+   retire donc que les deux formes reconnaissables : un préfixe court tout en
+   majuscules, ou un code alphanumérique de fin. Dans le doute, on garde. */
+function sansPSP(s: string): string {
+  if (!s.includes("*")) return s;
+  let out = s.replace(/^[A-Z]{2,4}\*\s*/, "");
+  /* Le code de fin doit contenir un chiffre pour être un code : sans ça on
+     ampute « UBER *EATS » de sa moitié utile. */
+  out = out.replace(/\s*\*[A-Za-z]*\d[A-Za-z0-9]*$/, "");
+  return out.trim() || s;
 }
 
 function normDate(d?: string | null): string | null {
