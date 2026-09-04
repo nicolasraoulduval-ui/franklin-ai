@@ -23,6 +23,22 @@ const SCHEMA = {
       amount: { type: "number", description: "montant positif, exactement comme imprimé" },
       side: { type: "string", enum: ["debit", "credit"] },
       op_date: { type: "string", description: "date d'opération dd/mm si différente" },
+      /* Ces trois champs étaient auparavant déduits du libellé par une expression
+         régulière : /CARTE X\\d+ (\\d{2}\\/\\d{2}) (.+)/. Ce motif n'existe que chez
+         Société Générale. Chez BoursoBank, Revolut, BNP ou le Crédit Agricole, le
+         libellé s'écrit autrement, le marchand n'était donc jamais reconnu — et
+         sans marchand, il n'y a plus d'abonnements, plus de bénéficiaires, plus
+         de salaire, plus de jours de la semaine. Un client hors SG recevait un
+         rapport bâti sur les rares lignes que les mots-clés attrapaient au vol.
+
+         Lire « FACTURE CARTE DU 240626 UBER EATS PARIS » et en tirer « UBER EATS »
+         n'est pas une invention : c'est de la normalisation d'un texte visible.
+         C'est précisément ce qu'un lecteur fait mieux qu'une regex, et ça vaut
+         pour toutes les banques d'un coup. Les montants, eux, restent hors de
+         portée du modèle : ils sont recopiés et vérifiés ailleurs. */
+      merchant: { type: "string", description: "commerçant ou organisme, nettoyé des préfixes bancaires (numéro de carte, dates, ville, « FACTURE CARTE DU », « CB », « PAIEMENT PAR CARTE »). Ex. « UBER EATS », « CARREFOUR CITY », « SPOTIFY ». Vide si l'écriture n'a pas de commerçant." },
+      op_type: { type: "string", enum: ["carte", "vir_emis", "vir_recu", "prelevement", "frais", "retrait", "cheque", "autre"], description: "nature de l'écriture, telle qu'elle se lit sur le relevé" },
+      contrepartie: { type: "string", description: "pour un virement uniquement : le nom de la personne ou de l'organisme à l'autre bout. Vide sinon." },
       /* op_time a été retiré du schéma, mais pas pour la raison écrite ici
          auparavant — cette note disait qu'un relevé ne contient aucune heure,
          et c'était faux. Vérification refaite ligne à ligne sur cinq relevés
@@ -56,7 +72,21 @@ Règles absolues :
 - Une écriture = une entrée. Les lignes de détail sous une écriture vont dans \`details\`.
 - La colonne du montant détermine \`side\`. Vérifie la position visuellement.
 - SOLDE PRÉCÉDENT / NOUVEAU SOLDE / TOTAUX DES MOUVEMENTS ne sont PAS des transactions : meta.
-- N'ignore jamais une écriture au motif qu'elle est petite ou répétitive.`;
+- N'ignore jamais une écriture au motif qu'elle est petite ou répétitive.
+
+Trois champs demandent une lecture, pas une recopie :
+- \`merchant\` : le nom du commerçant, débarrassé de l'habillage bancaire. « CARTE X8497
+  24/06 Spotify France » donne « SPOTIFY FRANCE » ; « FACTURE CARTE DU 240626 UBER EATS
+  PARIS » donne « UBER EATS ». Tu enlèves numéros de carte, dates, mentions « CB »,
+  « PAIEMENT PAR CARTE », « ACHAT », et le nom de la ville quand il suit l'enseigne.
+  Tu n'inventes aucun nom : si le libellé n'en contient pas, tu laisses vide.
+- \`op_type\` : ce que l'écriture est. Un achat par carte est « carte », même si la
+  banque l'appelle « facture ». Un virement reçu est « vir_recu », émis « vir_emis ».
+  Cotisations, commissions et agios sont « frais ».
+- \`contrepartie\` : sur un virement, le nom en face. Il figure souvent après « POUR: »,
+  « DE: », « BENEFICIAIRE » ou « ÉMETTEUR ». Vide si absent.
+
+Ces trois champs décrivent ce qui est écrit. Aucun ne se devine.`;
 
 async function call(pdfB64: string, extraMsg: string): Promise<VisionResult> {
   const res = await fetch(API, {
