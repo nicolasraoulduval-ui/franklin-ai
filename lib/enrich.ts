@@ -20,7 +20,10 @@ export interface VisionResult {
 function nettoyerMarchand(m: string | null | undefined): string | null {
   if (!m) return null;
   const s = m
-    .replace(/^(FACTURE\s+)?(ACHAT|PAIEMENT)?\s*(PAR\s+)?CARTE\s*(N?°?\s*\d+)?\s*(DU\s+)?/i, "")
+    /* Le groupe du numéro de carte exige un marqueur — « N° », « X », ou au moins
+       quatre chiffres. Écrit `\\d+` tout court, il avalait le 24 de « CARTE 24/06
+       CARREFOUR » et laissait « /06 CARREFOUR » comme nom de commerçant. */
+    .replace(/^(FACTURE\s+)?(ACHAT|PAIEMENT)?\s*(PAR\s+)?CARTE\s*(BLEUE\s*)?(N\s*°?\s*\d+|X\s*\d+|\d{4,})?\s*(DU\s+)?/i, "")
     .replace(/^X?\d{4,}\s+/, "")
     .replace(/\b\d{2}\/\d{2}(\/\d{2,4})?\b/g, " ")
     .replace(/\bCB\s*\*?\d*\b/gi, " ")
