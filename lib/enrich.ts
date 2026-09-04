@@ -125,6 +125,49 @@ export function lireLibelle(label: string, side: Side): { type: string; merchant
   return { type: "autre", ...rien };
 }
 
+/** re-segmente la chaîne details en pseudo-lignes (DE:, POUR:, MOTIF:, …) */
+function splitDetails(details: string | undefined): string[] {
+  if (!details || !details.trim()) return [];
+  return details.split(/(?=DE: |POUR: |MOTIF: |DATE: |REF: |ID: |MANDAT )/).map((s) => s.trim()).filter(Boolean);
+}
+
+export function enrich(vr: VisionResult): RawTransaction[] {
+  return vr.transactions.map((v) => {
+    const extra = splitDetails(v.details);
+    const lab = v.label;
+
+    /* Ce que la lecture du relevé a compris prime : elle voit le document.
+       À défaut, on lit le libellé nous-mêmes, avec les motifs de douze banques.
+       Les deux se complètent — la lecture donne souvent le commerçant sans le
+       type, le libellé donne souvent le type sans le commerçant. */
+    const lu = lireLibelle(lab, v.side);
+    let type = v.op_type && v.op_type !== "autre" ? v.op_type : lu.type;
+    const merchant: string | null = nettoyerMarchand(v.merchant) ?? lu.merchant;
+    const op_date: string | null = v.op_date || lu.op_date;
+
+    /* Dernier filet : un débit avec un commerçant mais sans nature reconnue est
+       presque toujours un achat par carte. Le classer ainsi vaut mieux que de le
+       laisser en « autre », où il devient invisible pour le rapport. */
+    if (type === "autre" && v.side === "debit" && merchant) type = "carte";
+
+    let op_time: string | null = v.op_time || null;
+    let beneficiaire: string | undefined = v.contrepartie?.trim() || undefined;
+    for (const e of extra) {
+      const t = e.match(/DATE: \d{2}\/\d{2}\/\d{4} (\d{2}:\d{2})/);
+      if (t) op_time = t[1];
+      const p = e.match(/POUR: (.+)/);
+      if (p) beneficiaire = p[1].trim();
+    }
+
+    const out: RawTransaction = {
+      date: v.date, valeur: v.date, label: lab, amount: v.amount, side: v.side,
+      extra, merchant, op_date, op_time, type, releve: vr.meta.date_nouv,
+    };
+    if (beneficiaire) out.beneficiaire = beneficiaire;
+    return out;
+  });
+}
+
 /** déduit les patterns "soi-même" du nom du titulaire imprimé sur le relevé */
 export function selfPatternsFromHolder(titulaire: string): string[] {
   const clean = titulaire.replace(/^(M|MME|MLE|MLLE|MR|MONSIEUR|MADAME)\.?\s+/i, "");
