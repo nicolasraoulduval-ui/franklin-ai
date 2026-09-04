@@ -63,7 +63,23 @@ html = html.slice(0, avantEtapes) + SCHEMAS_LANDING + "\n\n" + html.slice(avantE
 
 // 4 · CSS et JS des nouvelles sections
 html = html.replace("</style>", CSS_V2 + CSS_SCHEMAS + CSS_BANDEAU + CSS_FINAL + "\n</style>");
-html = html.replace("</body>", JS_V2 + "\n</body>");
+/* La landing n'envoyait aucun événement : le tunnel commençait donc à
+   « analyse_etape_1 », et on ignorait combien de visiteurs cliquent réellement
+   sur le bouton. C'est pourtant le seul chiffre qui dit si la page convainc.
+   Même identifiant de session que le tunnel React, mêmes règles : rien de
+   personnel, régénéré à chaque onglet, et jamais bloquant. */
+const SUIVI_LANDING = `<script>
+(function(){
+  try{
+    var s = Math.random().toString(36).slice(2,12);
+    var c = JSON.stringify({nom:"landing_vue",session:s,props:{}});
+    if(navigator.sendBeacon) navigator.sendBeacon("/api/evt", new Blob([c],{type:"application/json"}));
+    else fetch("/api/evt",{method:"POST",headers:{"content-type":"application/json"},body:c,keepalive:true});
+  }catch(e){}
+})();
+</script>`;
+
+html = html.replace("</body>", JS_V2 + SUIVI_LANDING + "\n</body>");
 
 // 4 bis · le bandeau d'extraits puis le dernier appel, AVANT le pied de page.
 //         Quelqu'un qui arrive en bas a tout lu sans cliquer : lui répéter la
