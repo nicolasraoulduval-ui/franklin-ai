@@ -42,6 +42,7 @@ export default function Analyse() {
   useEffect(() => { suivre("analyse_etape_1"); }, []);
   const [files, setFiles] = useState<File[]>([]);
   const [prenom, setPrenom] = useState("");
+  const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [preview, setPreview] = useState<string[] | null>(null);
@@ -52,6 +53,10 @@ export default function Analyse() {
   const analyser = async () => {
     setError("");
     if (!files.length) { setError("Ajoute au moins un relevé PDF."); return; }
+    /* Un relevé bancaire n'est pas un fichier comme un autre. On ne l'envoie pas
+       sans une acceptation explicite et tracée : c'est la base légale de tout ce
+       qui suit, et la seule case du parcours qui ne se négocie pas. */
+    if (!consent) { setError("Il faut accepter les conditions pour envoyer un relevé."); return; }
     setBusy(true);
     suivre("upload_lance", { nb_releves: files.length });
     const fd = new FormData();
@@ -179,6 +184,16 @@ export default function Analyse() {
           <input placeholder="Ton prénom" value={prenom} onChange={(e) => setPrenom(e.target.value)}
             autoComplete="given-name" autoCapitalize="words"
             style={{ width: "100%", padding: "14px", border: "2px solid #14161f", fontFamily: mono, fontSize: 16 }} />
+
+          <label style={{ display: "flex", gap: 11, alignItems: "flex-start", marginTop: 18, cursor: "pointer", fontSize: 13.5, lineHeight: 1.5, color: "#3c3f4c" }}>
+            <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)}
+              style={{ width: 20, height: 20, marginTop: 1, flexShrink: 0, accentColor: "#2f4df0", cursor: "pointer" }} />
+            <span>
+              J&apos;accepte les <a href="/cgv" target="_blank" style={{ color: "#2f4df0" }}>conditions de vente</a> et la{" "}
+              <a href="/confidentialite" target="_blank" style={{ color: "#2f4df0" }}>politique de confidentialité</a>, et je confirme
+              que ces relevés sont les miens.
+            </span>
+          </label>
 
           <button onClick={analyser} disabled={busy} style={cta}>
             {busy ? "FRANKLIN LIT TON RELEVÉ…" : "FAIRE PARLER MON RELEVÉ →"}
