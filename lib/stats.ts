@@ -88,14 +88,24 @@ interface Tx extends RawTransaction {
   self_transfer: boolean;
 }
 
+/* « DE: » est une convention Société Générale. Ailleurs, l'émetteur d'un
+   virement se lit dans le libellé, et c'est la lecture du relevé qui le range
+   dans « contrepartie ». Sans ce repli, un salaire versé chez une autre banque
+   n'était rattaché à aucune source : revenus_recurrents restait vide, et avec
+   lui la vitesse post-salaire, la note de gestion et la moitié du rapport. */
 function deOf(t: RawTransaction): string | null {
   const e = t.extra.find((x) => x.startsWith("DE: "));
-  return e ? e.slice(4).replace(/[ :]+$/, "") : null;
+  if (e) return e.slice(4).replace(/[ :]+$/, "");
+  if (t.side === "credit" && t.beneficiaire) return t.beneficiaire.trim();
+  if (t.type === "prelevement" && t.merchant) return t.merchant.trim();
+  return null;
 }
 
 function categorize(t: RawTransaction): string {
   const de = t.extra.find((x) => x.startsWith("DE: "))?.slice(4) ?? "";
-  const hay = `${t.merchant ?? ""} ${t.label} ${de}`;
+  /* On cherche aussi dans la contrepartie : « VIREMENT SNCF CONNECT » n'a pas de
+     marchand, mais son bénéficiaire en dit assez pour le classer. */
+  const hay = `${t.merchant ?? ""} ${t.label} ${de} ${t.beneficiaire ?? ""}`;
   for (const [cat, re] of CATS) if (re.test(hay)) return cat;
   if (t.type === "vir_emis") return "virement_emis";
   if (t.type === "vir_recu") return "virement_recu";
