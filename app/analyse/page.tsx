@@ -209,8 +209,11 @@ export default function Analyse() {
       {/* ---------- aperçu gratuit, puis Stripe ---------- */}
       {preview && (
         <>
-          <h1 style={{ fontFamily: gab, fontWeight: 900, fontSize: 34, lineHeight: 1.05 }}>
-            Franklin a tout lu.<br />Voilà trois choses, gratuites.
+          {/* « Voilà trois choses, gratuites » : une cliente a buté dessus — la
+              gratuité n'est pas ce qu'on annonce, c'est ce qu'on constate. Ce qui
+              donne envie de lire, c'est que ce soient les trois plus fortes. */}
+          <h1 style={{ fontFamily: gab, fontWeight: 900, fontSize: "clamp(28px,7.5vw,34px)", lineHeight: 1.05 }}>
+            Franklin a tout lu.<br />Voilà les 3 choses<br />les plus importantes.
           </h1>
           <div style={{ margin: "24px 0" }}>
             {preview.map((f, i) => (
