@@ -99,6 +99,35 @@ export function orphans(report: Rapport, allowed: Set<number>): string[] {
   return bad;
 }
 
+/**
+ * Noms de personnes présents dans le stats.json — bénéficiaires de virements,
+ * surtout. Un rapport titré « LA NAVETTE JOURDAINNE » a été livré à une cliente :
+ * JOURDAINNE est le nom de son propriétaire, lu sur ses virements de loyer. Le
+ * prompt l'interdisait déjà ; une consigne ne suffit pas quand le nom est la
+ * chose la plus saillante du JSON.
+ */
+function nomsDePersonnes(stats: any): string[] {
+  const liste: string[] = [];
+  for (const b of stats?.top_beneficiaires?.liste ?? []) {
+    if (typeof b?.beneficiaire === "string") liste.push(b.beneficiaire);
+  }
+  const mots = new Set<string>();
+  for (const nom of liste) {
+    for (const mot of nom.split(/[\s,'-]+/)) {
+      /* Quatre lettres minimum : « LEA » ou « G » apparaîtraient partout et
+         feraient rejeter des titres innocents. */
+      if (mot.length >= 4 && /^[A-Za-zÀ-ÿ]+$/.test(mot)) mots.add(mot.toUpperCase());
+    }
+  }
+  return [...mots];
+}
+
+function nomPropreDansTitre(report: Rapport, noms: string[]): string | null {
+  const titre = (report?.archetype?.titre ?? "").toUpperCase();
+  for (const n of noms) if (titre.includes(n)) return n;
+  return null;
+}
+
 export async function generateRapport(stats: unknown, prenom: string): Promise<Rapport> {
   const system = FRANKLIN_SYSTEM_PROMPT;
   const allowed = new Set<number>();
@@ -122,6 +151,16 @@ export async function generateRapport(stats: unknown, prenom: string): Promise<R
     const report = out.content.find((b: { type: string }) => b.type === "tool_use").input as Rapport;
     const bad = orphans(report, allowed);
     last = report;
+
+    /* Le nom d'une personne dans le titre du rapport est la faute qui se voit le
+       plus : elle transforme un portrait en indiscrétion. On régénère. */
+    const nomFuite = nomPropreDansTitre(report, nomsDePersonnes(stats));
+    if (nomFuite) {
+      userMsg += `\n\nATTENTION : ton titre d'archétype contient « ${nomFuite} », qui est le nom d'une personne lue sur le relevé. ` +
+        `Un nom propre ne va JAMAIS dans un titre. Régénère un titre tiré d'un comportement, pas d'un nom.`;
+      continue;
+    }
+
     if (!bad.length) return sansJargon(report);
     userMsg += `\n\nATTENTION : ta version précédente citait des chiffres absents du JSON : ${bad.slice(0, 10).join(", ")}. ` +
       `Régénère en n'utilisant QUE les chiffres du stats.json.`;
