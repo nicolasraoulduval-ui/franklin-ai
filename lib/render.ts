@@ -196,7 +196,12 @@ export function renderRapport(r: Rapport, stats: Stats, prenom: string, dateGen:
 
   if (r.bulletin?.length) {
     const n20 = (s: string) => parseFloat(String(s).replace(",", "."));
-    const rows = r.bulletin.map((b) => `<tr><td>${esc(b.matiere)}</td><td class="note${n20(b.note) >= 14 ? " good" : n20(b.note) < 8 ? " bad" : ""}">${esc(b.note)}</td><td class="appr">${esc(b.appreciation)}</td></tr>`).join("");
+    /* Le barème doit être écrit. Le modèle rend tantôt « 16/20 », tantôt « 16 » ;
+       un nombre nu posé à côté des « 2/4 » de la note de gestion, deux sections
+       plus bas, ne veut plus rien dire. On le complète ici plutôt que d'espérer
+       une consigne respectée à chaque fois. */
+    const sur20 = (n: string) => (/\\//.test(String(n)) ? String(n) : `\${String(n).trim()}/20`);
+    const rows = r.bulletin.map((b) => `<tr><td>\${esc(b.matiere)}</td><td class="note\${n20(b.note) >= 14 ? " good" : n20(b.note) < 8 ? " bad" : ""}">\${esc(sur20(b.note))}</td><td class="appr">\${esc(b.appreciation)}</td></tr>`).join("");
     S.push(`<section><div class="wrap"><div class="kicker">Bulletin du semestre</div><h2>Conseil de classe.</h2>
       <table class="bulletin"><tr><th>MATIÈRE</th><th>NOTE</th><th>APPRÉCIATION DU RELEVÉ</th></tr>${rows}</table></div></section>`);
   }
