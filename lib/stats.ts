@@ -114,6 +114,22 @@ function categorize(t: RawTransaction): string {
   return "autre";
 }
 
+/**
+ * Un bénéficiaire de virement arrive collé à ses coordonnées bancaires :
+ * « Raoul-Duval Francoise / 01 07 SG 01803 CPT 00050288795 / », « KERNEL
+ * BIOMEDICAL; 10 08 BQ BNPA CPT 00010453994; ». Le même destinataire apparaît
+ * alors sous trois formes, et le classement affiche trois fois la même ligne à
+ * 660 € au lieu d'une à 1 980 € — ce qu'une cliente a vu tout de suite.
+ * On coupe donc au premier séparateur ou au premier bloc de coordonnées.
+ */
+function normBeneficiaire(nom: string): string {
+  let s = nom.split(/[/;]/)[0];
+  s = s.replace(/\s+\d{2}\s+\d{2}\s+(SG|BQ|CPT|BNPA|REVO)\b.*$/i, "");
+  s = s.replace(/\s+(IBAN|CPT|REF|BIC)\s*:?.*$/i, "");
+  s = s.replace(/\s{2,}/g, " ").trim().replace(/[\s,;./-]+$/, "");
+  return s;
+}
+
 function normMerchant(m: string | null): string | null {
   if (!m) return null;
   return m.replace(/UBER ?\*? ?TRIP.*/, "UBER *TRIP").replace(/APPLE\.COM\/BILL/, "APPLE").trim();
@@ -206,7 +222,21 @@ export function computeStats(raw: RawTransaction[], config: StatsConfig) {
     const counts = new Map<number, number>();
     for (const a of amounts) counts.set(a, (counts.get(a) ?? 0) + 1);
     const plateaus = counts.size <= 2 && Math.min(...counts.values()) >= 2;
-    if (monthlyish.length >= Math.max(2, gaps.length - 1) && (stable || plateaus)) {
+    /* Un prélèvement mensuel tombe au même jour du mois, à quelques jours près.
+       Un achat répété au hasard — le bubble tea à 6 € pris quatre fois — a le même
+       montant et des écarts proches de trente jours, donc il passait pour un
+       abonnement. La régularité du JOUR est ce qui les sépare, et c'est une
+       cliente qui a donné la clé.
+
+       On mesure la dispersion des jours du mois en tenant compte du cycle : le 30
+       et le 2 sont à trois jours l'un de l'autre, pas à vingt-huit. */
+    const jours = ts.map((x) => x.d.getUTCDate());
+    const ecartCyclique = (a: number, b: number) => { const e = Math.abs(a - b); return Math.min(e, 30 - e); };
+    const ref = jours[0];
+    const derive = Math.max(...jours.map((j) => ecartCyclique(j, ref)));
+    const memeJour = derive <= 4;
+
+    if (memeJour && monthlyish.length >= Math.max(2, gaps.length - 1) && (stable || plateaus)) {
       const med = [...amounts].sort((a, b) => a - b)[Math.floor(amounts.length / 2)];
       abos.push({
         marchand: m, nb: ts.length, montant_mensuel: C(med),
@@ -303,7 +333,7 @@ export function computeStats(raw: RawTransaction[], config: StatsConfig) {
   const benef = new Map<string, [number, number]>();
   for (const t of tx) {
     if (t.side !== "debit" || t.type !== "vir_emis" || t.self_transfer) continue;
-    const qui = (t.beneficiaire ?? "").trim();
+    const qui = normBeneficiaire(t.beneficiaire ?? "");
     if (!qui) continue;
     const val = benef.get(qui) ?? [0, 0];
     val[0] += 1; val[1] += t.amount; benef.set(qui, val);
