@@ -125,7 +125,14 @@ export default function FranklinLoader() {
           </div>
         </div>
 
-        <div className="fl-foot">ton fichier est supprimé dès le rapport écrit · rien n&apos;est stocké</div>
+        {/* Une ligne unique, coupée n'importe où sur un écran de téléphone : le
+            point médian tombait en fin de ligne et la phrase se lisait mal. Deux
+            fragments courts, l'un sous l'autre, se lisent d'un coup d'œil — et
+            c'est le message qui rassure le plus juste avant de confier un relevé. */}
+        <div className="fl-foot">
+          <b>Rien n&apos;est stocké.</b>
+          <span>Ton fichier est supprimé dès le rapport écrit.</span>
+        </div>
       </div>
     </div>
   );
@@ -197,15 +204,17 @@ const CSS = `
 .fl-count{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4a4f60;margin-top:9px}
 .fl-count b{color:#14161f;font-weight:700}
 
-.fl-foot{position:absolute;bottom:-58px;left:0;right:0;text-align:center;
-  font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4a4f60}
+.fl-foot{position:absolute;bottom:-64px;left:0;right:0;text-align:center;
+  font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#4a4f60;
+  display:flex;flex-direction:column;gap:3px;line-height:1.5}
+.fl-foot b{color:#14161f;font-weight:700}
 
 @media(max-width:760px){
   .fl-stage{grid-template-columns:1fr;gap:26px;max-width:420px}
   .fl-side{order:-1}
   .fl-mascotte{display:none}
   .fl-tape{height:230px}
-  .fl-foot{position:static;margin-top:20px}
+  .fl-foot{position:static;margin-top:24px;font-size:12px;padding:0 18px}
 }
 @media(prefers-reduced-motion:reduce){
   .fl-head,.fl-mascotte,.fl-eye{animation:none}
