@@ -64,6 +64,11 @@ const CATS: Array<[string, RegExp]> = [
   ["soin", /PHARMACIE|PARAPHARM|COIFF|BARBE|BARBER|INSTITUT|ONGLERIE|SPA\b|OPTIC|DENTAIRE|DENTISTE|MEDECIN|DOCTEUR|LABORATOIRE|KINE|OSTEO|MUTUELLE|DOCTOLIB/i],
   ["logement", /\bLOYER\b|\bEDF\b|ENGIE|VEOLIA|\bSUEZ\b|SYNDIC|AGENCE IMMO|FONCIA|NEXITY|CHARGES COPRO|ASSURANCE HABITATION|\bMAIF\b|\bMACIF\b|MATMUT|AXA|ALLIANZ|GMF/i],
   ["sorties", /CINEMA|\bUGC\b|PATHE|GAUMONT|MK2|THEATRE|CONCERT|SPECTACLE|MUSEE|EXPO|BOWLING|LASER ?GAME|ESCAPE|BILLETRE|DICE|SHOTGUN|PARC LOUVIERE|KUBYK|DOMAINE SAINT|BPIF/i],
+  /* Deux postes qui tombaient tous les deux dans « autre », donc invisibles pour
+     le rapport : le tabac-presse et les livres. Sur un profil de test, dix-huit
+     lignes de tabac disparaissaient — soit le fait le plus répété du relevé. */
+  ["tabac_presse", /\bTABAC\b|CIVETTE|PRESSE|BURALISTE|LE CARRE D'AS|FRANCAISE DES JEUX|\bFDJ\b|PMU\b|RELAY\b|MAISON DE LA PRESSE/i],
+  ["livres", /LIBRAIRIE|MOLLAT|GIBERT|DECITRE|FURET DU NORD|CULTURA|MOMIE|BD\b|BOOKSTORE|WATERSTONES/i],
   ["frais_bancaires", /COMMISSION D'INTERVENTION|COTISATION MENSUELLE|INTERETS DEBITEURS|AGIOS|OPTION INTERNAT|FRAIS DE TENUE|FRAIS BANCAIRES/i],
 ];
 
@@ -75,6 +80,7 @@ export const LIBELLES: Record<string, string> = {
   transport: "transports", courses: "courses", resto_bars: "restaurants et bars",
   abo_telecom: "téléphone et internet", musique_video: "musique et vidéo",
   sport: "sport", formation: "formation", shopping: "achats", soin: "santé et soin",
+  tabac_presse: "tabac et presse", livres: "livres",
   logement: "logement et énergie", sorties: "sorties", frais_bancaires: "frais bancaires",
   virement_emis: "virements envoyés", virement_recu: "virements reçus",
   prelevement: "prélèvements", autre: "non classé",
@@ -240,7 +246,16 @@ export function computeStats(raw: RawTransaction[], config: StatsConfig) {
     const derive = Math.max(...jours.map((j) => ecartCyclique(j, ref)));
     const memeJour = derive <= 4;
 
-    if (memeJour && monthlyish.length >= Math.max(2, gaps.length - 1) && (stable || plateaus)) {
+    /* Un abonnement payé par carte — Netflix, Spotify — prélève toujours le
+       même centime. Un restaurant fréquenté chaque mois, jamais. Sans cette
+       distinction, un profil de test voyait « SUSHI SHOP » et « CINEMA PATHE »
+       promus abonnements : le montant variait dans la tolérance et le jour
+       tombait dans la fenêtre. Pour les prélèvements, la tolérance reste — une
+       facture d'électricité change tous les mois et n'en est pas moins due. */
+    const parCarte = ts.filter((x) => x.type === "carte").length > ts.length / 2;
+    const assezStable = parCarte ? mx === mn : (stable || plateaus);
+
+    if (memeJour && monthlyish.length >= Math.max(2, gaps.length - 1) && assezStable) {
       const med = [...amounts].sort((a, b) => a - b)[Math.floor(amounts.length / 2)];
       abos.push({
         marchand: m, nb: ts.length, montant_mensuel: C(med),
