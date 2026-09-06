@@ -97,7 +97,11 @@ function deOf(t: RawTransaction): string | null {
   const e = t.extra.find((x) => x.startsWith("DE: "));
   if (e) return e.slice(4).replace(/[ :]+$/, "");
   if (t.side === "credit" && t.beneficiaire) return t.beneficiaire.trim();
-  if (t.type === "prelevement" && t.merchant) return t.merchant.trim();
+  /* Un prélèvement porte le nom de l'organisme, pas d'un commerçant : selon la
+     banque il arrive dans le champ marchand ou dans la contrepartie. Sans ce
+     repli, aucun prélèvement mensuel n'était regroupé — donc aucun abonnement
+     détecté hors Société Générale. */
+  if (t.type === "prelevement") return (t.merchant ?? t.beneficiaire)?.trim() ?? null;
   return null;
 }
 
@@ -203,7 +207,7 @@ export function computeStats(raw: RawTransaction[], config: StatsConfig) {
   for (const t of tx) {
     if (t.side !== "debit") continue;
     let key: string | null = t.merchant;
-    if (t.type === "prelevement") key = t.source;
+    if (t.type === "prelevement") key = t.source ?? t.beneficiaire ?? t.merchant;
     if (t.cat === "frais_bancaires" && !t.label.includes("OPTION") && !t.label.includes("COTISATION")) key = null;
     if (t.label.includes("COTISATION MENSUELLE")) key = "SG option Sobrio";
     if (t.label.includes("OPTION INTERNAT")) key = "SG option internationale";
