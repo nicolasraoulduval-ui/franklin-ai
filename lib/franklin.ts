@@ -209,9 +209,12 @@ export async function generateRapport(stats: unknown, prenom: string): Promise<R
        matière disponible — on ne demande pas huit cents mots à quelqu'un qui a
        déposé un seul mois. */
     const mois = Number((stats as any)?.periode?.nb_mois ?? 3);
-    const plafond = mois >= 3 ? 800 : 520;
+    /* 800 mots de prose, pas 800 mots à l'écran : le rendu ajoute environ 550
+       mots de titres, de légendes et de mentions. Une tolérance de 25 % laissait
+       passer mille mots — mesuré, le rapport faisait toujours le double. */
+    const plafond = mois >= 3 ? 760 : 480;
     const mots = nbMots(report);
-    if (mots > plafond * 1.25 && attempt < 3) {
+    if (mots > plafond * 1.05 && attempt < 3) {
       userMsg += `\n\nATTENTION : ta version précédente fait ${mots} mots. La limite est ${plafond}. ` +
         `Reprends chaque paragraphe et coupe : garde le chiffre et la chute, supprime la phrase qui explique la chute, ` +
         `supprime les transitions, supprime tout ce qui n'apporte ni un fait ni un rire. Vise ${Math.round(plafond * 0.9)} mots.`;
