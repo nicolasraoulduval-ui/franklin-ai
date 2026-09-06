@@ -5,7 +5,15 @@ import type { Rapport } from "./franklin";
 
 type Stats = Record<string, any>;
 
-const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+/* esc recevait la valeur telle quelle. Un champ optionnel absent du JSON —
+   fuites.intro, toi_vs_toi.punchline, un sous-titre — et c'est undefined.replace()
+   qui remonte, la génération échoue, et le client qui vient de payer voit un
+   écran d'attente qui ne finit jamais. Le journal d'erreurs l'a montré : cinq
+   pannes graves en quinze minutes, toutes la même ligne.
+
+   La faille existait depuis le début ; elle ne s'est déclenchée que le jour où
+   le modèle a commencé à omettre des champs facultatifs. */
+const esc = (s: unknown) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const paras = (t?: string) => (t ?? "").split(/\n\n+/).map((p) => p.trim()).filter(Boolean).map((p) => `<p>${esc(p)}</p>`).join("");
 
 function barChart2(s: Stats): string {
