@@ -135,7 +135,17 @@ export function calculerNote(stats: Stats): NoteGestion {
 
   const obtenu = sous.reduce((s, x) => s + x.note, 0);
   const maximum = 4 * sous.length;
-  const note = arrondiDemi((20 * obtenu) / maximum);
+  let note = arrondiDemi((20 * obtenu) / maximum);
+
+  /* Un plafond, pas un critère de plus.
+     Un profil de test payait neuf commissions d'intervention en trois mois et
+     ressortait à 16/20 avec « Félicitations du conseil » : les quatre autres
+     critères compensaient le zéro sur le découvert. Or on ne félicite pas
+     quelqu'un que sa banque prélève chaque mois pour dépassement. Trois
+     commissions ou plus, et la note ne peut plus dire que tout va bien. */
+  const commissions: number = stats?.frais_decouvert?.commissions_intervention?.nb ?? 0;
+  if (commissions >= 3) note = Math.min(note, 11);
+  else if (commissions >= 1) note = Math.min(note, 15);
 
   return { note, sur: 20, mention: mention(note), nb_criteres_retenus: sous.length, sous_notes: sous };
 }
