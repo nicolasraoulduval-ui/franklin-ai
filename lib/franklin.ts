@@ -127,6 +127,28 @@ export function orphans(report: Rapport, allowed: Set<number>): string[] {
  * prompt l'interdisait déjà ; une consigne ne suffit pas quand le nom est la
  * chose la plus saillante du JSON.
  */
+/**
+ * Longueur du rapport, en mots.
+ *
+ * Les bornes maxLength du schéma n'ont eu aucun effet : mesuré sur dix profils
+ * avant et après, la longueur n'a pas bougé d'un mot. L'API les traite comme une
+ * indication, pas comme une contrainte. Le seul mécanisme qui tient dans ce
+ * fichier est celui des chiffres orphelins : on mesure, et on redemande.
+ */
+function nbMots(report: Rapport): number {
+  const morceaux: string[] = [];
+  const parcourir = (x: unknown): void => {
+    if (typeof x === "string") morceaux.push(x);
+    else if (Array.isArray(x)) x.forEach(parcourir);
+    else if (x && typeof x === "object") Object.values(x).forEach(parcourir);
+  };
+  /* Le bulletin et les notes sont des libellés courts imposés par le format :
+     les compter reviendrait à sanctionner la structure, pas le bavardage. */
+  const { bulletin, ...prose } = report as Record<string, unknown>;
+  parcourir(prose);
+  return morceaux.join(" ").trim().split(/\s+/).filter(Boolean).length;
+}
+
 function nomsDePersonnes(stats: any): string[] {
   const liste: string[] = [];
   for (const b of stats?.top_beneficiaires?.liste ?? []) {
@@ -179,6 +201,20 @@ export async function generateRapport(stats: unknown, prenom: string): Promise<R
     if (nomFuite) {
       userMsg += `\n\nATTENTION : ton titre d'archétype contient « ${nomFuite} », qui est le nom d'une personne lue sur le relevé. ` +
         `Un nom propre ne va JAMAIS dans un titre. Régénère un titre tiré d'un comportement, pas d'un nom.`;
+      continue;
+    }
+
+    /* Un rapport deux fois trop long est le reproche le plus fréquent des
+       clients : « moins de texte, plus de schémas ». La limite dépend de la
+       matière disponible — on ne demande pas huit cents mots à quelqu'un qui a
+       déposé un seul mois. */
+    const mois = Number((stats as any)?.periode?.nb_mois ?? 3);
+    const plafond = mois >= 3 ? 800 : 520;
+    const mots = nbMots(report);
+    if (mots > plafond * 1.25 && attempt < 3) {
+      userMsg += `\n\nATTENTION : ta version précédente fait ${mots} mots. La limite est ${plafond}. ` +
+        `Reprends chaque paragraphe et coupe : garde le chiffre et la chute, supprime la phrase qui explique la chute, ` +
+        `supprime les transitions, supprime tout ce qui n'apporte ni un fait ni un rire. Vise ${Math.round(plafond * 0.9)} mots.`;
       continue;
     }
 
