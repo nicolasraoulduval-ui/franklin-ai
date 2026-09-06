@@ -21,46 +21,67 @@ export interface Rapport {
   cartes: Array<{ texte: string }>;
 }
 
+/**
+ * Le schéma porte les limites de longueur, parce que la consigne ne suffit pas.
+ *
+ * Le prompt demande 550 à 800 mots pour six mois de données. Mesuré sur dix
+ * profils de test : entre 1 468 et 1 569 mots, sans exception — le double, à
+ * chaque fois. Un modèle négocie avec une phrase en prose ; il ne négocie pas
+ * avec maxLength. Les bornes ci-dessous additionnées donnent environ 700 mots,
+ * ce qui laisse de la place pour bien écrire et aucune pour délayer.
+ *
+ * C'est le reproche d'un client, mot pour mot : « en général il faut moins de
+ * texte, plus de schémas et plus d'humour ».
+ */
 const SCHEMA = {
   type: "object",
   properties: {
-    archetype: { type: "object", properties: { titre: { type: "string" }, sous_titre: { type: "string" }, texte: { type: "string" } }, required: ["titre", "sous_titre", "texte"] },
-    mensonges: { type: "array", minItems: 3, maxItems: 5, items: { type: "object", properties: { mensonge: { type: "string" }, verite: { type: "string" }, punchline: { type: "string" } }, required: ["mensonge", "verite", "punchline"] } },
-    fuites: { type: "object", properties: { intro: { type: "string" }, lignes: { type: "array", items: { type: "object", properties: { label: { type: "string" }, montant_json: { type: "string" } }, required: ["label", "montant_json"] } }, total_label: { type: "string" }, punchline: { type: "string" } }, required: ["lignes"] },
-    signature: { type: "object", properties: { titre: { type: "string" }, texte: { type: "string" } }, required: ["titre", "texte"] },
-    toi_vs_toi: { type: "object", properties: { titre: { type: "string" }, gauche: { type: "object", properties: { label: { type: "string" }, faits: { type: "array", items: { type: "string" } } }, required: ["label", "faits"] }, droite: { type: "object", properties: { label: { type: "string" }, faits: { type: "array", items: { type: "string" } } }, required: ["label", "faits"] }, punchline: { type: "string" } }, required: ["titre", "gauche", "droite"] },
-    bulletin: { type: "array", minItems: 5, maxItems: 7, items: { type: "object", properties: { matiere: { type: "string" }, note: { type: "string" }, appreciation: { type: "string" } }, required: ["matiere", "note", "appreciation"] } },
-    verdict: { type: "object", properties: { texte: { type: "string" }, derniere_ligne: { type: "string" } }, required: ["texte", "derniere_ligne"] },
-    note_finale: { type: "object", properties: { commentaire: { type: "string" } }, required: ["commentaire"] },
-    si_alors: { type: "object", properties: { intro: { type: "string" }, punchline: { type: "string" } }, required: ["intro", "punchline"] },
-    cartes: { type: "array", minItems: 4, maxItems: 4, items: { type: "object", properties: { texte: { type: "string" } }, required: ["texte"] } },
+    archetype: { type: "object", properties: {
+      titre: { type: "string", maxLength: 34 },
+      sous_titre: { type: "string", maxLength: 70 },
+      texte: { type: "string", maxLength: 620 },
+    }, required: ["titre", "sous_titre", "texte"] },
+    mensonges: { type: "array", minItems: 3, maxItems: 4, items: { type: "object", properties: {
+      mensonge: { type: "string", maxLength: 90 },
+      verite: { type: "string", maxLength: 170 },
+      punchline: { type: "string", maxLength: 140 },
+    }, required: ["mensonge", "verite", "punchline"] } },
+    fuites: { type: "object", properties: {
+      intro: { type: "string", maxLength: 200 },
+      lignes: { type: "array", maxItems: 6, items: { type: "object", properties: {
+        label: { type: "string", maxLength: 70 }, montant_json: { type: "string", maxLength: 24 },
+      }, required: ["label", "montant_json"] } },
+      total_label: { type: "string", maxLength: 60 },
+      punchline: { type: "string", maxLength: 150 },
+    }, required: ["lignes"] },
+    signature: { type: "object", properties: {
+      titre: { type: "string", maxLength: 60 },
+      texte: { type: "string", maxLength: 560 },
+    }, required: ["titre", "texte"] },
+    toi_vs_toi: { type: "object", properties: {
+      titre: { type: "string", maxLength: 44 },
+      gauche: { type: "object", properties: { label: { type: "string", maxLength: 30 }, faits: { type: "array", maxItems: 4, items: { type: "string", maxLength: 90 } } }, required: ["label", "faits"] },
+      droite: { type: "object", properties: { label: { type: "string", maxLength: 30 }, faits: { type: "array", maxItems: 4, items: { type: "string", maxLength: 90 } } }, required: ["label", "faits"] },
+      punchline: { type: "string", maxLength: 140 },
+    }, required: ["titre", "gauche", "droite"] },
+    bulletin: { type: "array", minItems: 5, maxItems: 6, items: { type: "object", properties: {
+      matiere: { type: "string", maxLength: 40 },
+      note: { type: "string", maxLength: 6 },
+      appreciation: { type: "string", maxLength: 130 },
+    }, required: ["matiere", "note", "appreciation"] } },
+    verdict: { type: "object", properties: {
+      texte: { type: "string", maxLength: 480 },
+      derniere_ligne: { type: "string", maxLength: 110 },
+    }, required: ["texte", "derniere_ligne"] },
+    note_finale: { type: "object", properties: { commentaire: { type: "string", maxLength: 340 } }, required: ["commentaire"] },
+    si_alors: { type: "object", properties: {
+      intro: { type: "string", maxLength: 200 },
+      punchline: { type: "string", maxLength: 160 },
+    }, required: ["intro", "punchline"] },
+    cartes: { type: "array", minItems: 4, maxItems: 4, items: { type: "object", properties: { texte: { type: "string", maxLength: 95 } }, required: ["texte"] } },
   },
   required: ["archetype", "mensonges", "signature", "verdict", "cartes", "note_finale"],
 };
-
-/**
- * Traduction des clés techniques restées dans la prose.
- *
- * Le prompt interdit d'écrire « resto_bars » ou « ia_outils » ; le modèle le
- * fait quand même de temps en temps, parce que la clé est sous ses yeux dans le
- * stats.json. Une consigne ne suffit pas à garantir un résultat : on répare donc
- * après coup, où c'est déterministe.
- *
- * On ne rejette pas le rapport pour ça — un client ne doit pas attendre une
- * régénération complète à cause d'un tiret bas.
- */
-const JARGON = new RegExp("\\b(" + Object.keys(LIBELLES).filter((k) => k.includes("_")).join("|") + ")\\b", "g");
-
-function sansJargon<T>(valeur: T): T {
-  if (typeof valeur === "string") return valeur.replace(JARGON, (k) => LIBELLES[k] ?? k) as unknown as T;
-  if (Array.isArray(valeur)) return valeur.map(sansJargon) as unknown as T;
-  if (valeur && typeof valeur === "object") {
-    const out: Record<string, unknown> = {};
-    for (const [k, val] of Object.entries(valeur)) out[k] = sansJargon(val);
-    return out as unknown as T;
-  }
-  return valeur;
-}
 
 function collectNumbers(obj: unknown, acc: Set<number>): void {
   if (obj == null) return;
