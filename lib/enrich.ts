@@ -94,6 +94,56 @@ function normDate(d?: string | null): string | null {
   return m ? m[1] + "/" + m[2] : null;
 }
 
+/**
+ * Le nom de la contrepartie, lu dans le libellé.
+ *
+ * Sans ça, un virement hors Société Générale n'a de nom nulle part : « DE: » est
+ * une convention SG, et la lecture du relevé ne remplit pas toujours le champ.
+ * Conséquences mesurées sur dix profils synthétiques : le salaire n'était
+ * rattaché à personne dans neuf cas sur dix, aucun bénéficiaire n'apparaissait,
+ * et les prélèvements mensuels n'étaient pas reconnus comme abonnements — parce
+ * que leur regroupement se fait justement par ce nom.
+ */
+const PREFIXES_CONTREPARTIE: RegExp[] = [
+  /^VIREMENT\s+SEPA\s+(RECU|EMIS)\s*\/(DE|BEN)\s*/i,
+  /^VIREMENT\s+(EN\s+VOTRE\s+FAVEUR|RECU\s+DE|DE|EMIS|POUR)\s+/i,
+  /^VIR\s+SEPA\s+(RECU|EMIS)\s+/i,
+  /^VIR\s+(RECU|EMIS)\s+\d+\s*/i,
+  /^VIR\s+(RECU|EMIS|INST|INSTANTANE)\s+/i,
+  /^VIRT?\.?\s*(POUR|DE)\s+/i,
+  /^EURO\s+VIR\s+/i,
+  /^\d+\s+VIR\s+(INSTANTANE\s+)?(EUROPEEN\s+)?EMIS\s+(LOGITEL\s+)?/i,
+  /^VIR\s+SEPA\s+/i,
+  /^VIREMENT\s+/i,
+  /^VIRT?\.?(PERIODIQUE)?\s+/i,
+  /^VIR\s+/i,
+  /^PRELEVEMENT\s+(EUROPEEN\s+)?(SEPA\s+)?(DE\s+)?/i,
+  /^PRLV\s+(SEPA\s+)?/i,
+  /^PE\s+SEPA\s+/i,
+  /^PLT\s+/i,
+];
+
+/** Références de mandat, motifs et coordonnées collés derrière le nom. */
+const SUFFIXES_CONTREPARTIE: RegExp[] = [
+  /\s*\/\s*(MOTIF|REF|BEN|DE)\b.*$/i,
+  /\s+(MDT|ECH|RUM|ICS|REF|ID|IBAN|CPT|BIC)\s*[:/].*$/i,
+  /\s+\d{2}\s+\d{2}\s+(SG|BQ|CPT|BNPA|REVO)\b.*$/i,
+  /[;/].*$/,
+];
+
+export function contrepartieDuLibelle(label: string): string | null {
+  let s = (label || "").trim();
+  let coupe = false;
+  for (const re of PREFIXES_CONTREPARTIE) if (re.test(s)) { s = s.replace(re, ""); coupe = true; break; }
+  if (!coupe) return null;
+  for (const re of SUFFIXES_CONTREPARTIE) s = s.replace(re, "");
+  s = s.replace(/\s{2,}/g, " ").trim().replace(/[\s,;.-]+$/, "");
+  /* LOGITEL, INTERNET, APPLI ne sont pas des bénéficiaires : ce sont les canaux
+     par lesquels le virement a été passé. Chez SG le vrai nom est dans « POUR: ». */
+  if (/^(LOGITEL|INTERNET|APPLI|MOBILE|WEB|AGENCE|BANQUE\s+A\s+DISTANCE)$/i.test(s)) return null;
+  return s.length >= 2 && /[A-Za-zÀ-ÿ]{2}/.test(s) ? s : null;
+}
+
 export function lireLibelle(label: string, side: Side): { type: string; merchant: string | null; op_date: string | null } {
   const l = (label || "").trim();
   const rien = { merchant: null, op_date: null };
@@ -104,7 +154,8 @@ export function lireLibelle(label: string, side: Side): { type: string; merchant
   if (/RETRAIT\s+(DAB|GAB|AU\s+DISTRIBUTEUR|MUR|CARTE|ESPECES|DU)|RET\s+(DAB|GAB)|CB\s+RETRAIT/i.test(l))
     return { type: "retrait", ...rien };
   /* Banque Populaire écrit le paiement carte sans commerçant ni date. */
-  if (/^CARTE\s*-\s*PAIEMENT\s+CB\s*$/i.test(l)) return { type: "carte", ...rien };
+  const bp = l.match(/^CARTE\s*-\s*PAIEMENT\s+CB\s*(?<m>.*)$/i);
+  if (bp) return { type: "carte", merchant: nettoyerMarchand(bp.groups?.m), op_date: null };
 
   for (const re of CARTES) {
     const m = l.match(re);
@@ -153,7 +204,8 @@ export function enrich(vr: VisionResult): RawTransaction[] {
     if (type === "autre" && v.side === "debit" && merchant) type = "carte";
 
     let op_time: string | null = v.op_time || null;
-    let beneficiaire: string | undefined = v.contrepartie?.trim() || undefined;
+    let beneficiaire: string | undefined =
+      v.contrepartie?.trim() || contrepartieDuLibelle(lab) || undefined;
     for (const e of extra) {
       const t = e.match(/DATE: \d{2}\/\d{2}\/\d{4} (\d{2}:\d{2})/);
       if (t) op_time = t[1];
