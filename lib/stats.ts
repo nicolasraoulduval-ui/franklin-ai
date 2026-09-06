@@ -164,11 +164,19 @@ export function computeStats(raw: RawTransaction[], config: StatsConfig) {
 
   const dates = tx.map((t) => t.d.getTime());
   const nbReleves = new Set(tx.map((t) => t.releve)).size;
+  /* nb_mois valait le nombre de relevés déposés. Ça tombe juste tant qu'un
+     relevé couvre un mois — et c'est faux dès qu'une banque en édite un par
+     trimestre. Or le prompt s'en sert pour décider d'écrire court et d'omettre
+     des sections : un client avec un seul relevé trimestriel recevait un rapport
+     tronqué alors qu'il avait apporté trois mois de vie. On compte donc les mois
+     réellement couverts, et on garde le nombre de relevés à part. */
+  const nbMois = new Set(tx.map((t) => t.month)).size;
   const stats: Record<string, unknown> = {
     periode: {
       debut: iso(new Date(Math.min(...dates))),
       fin: iso(new Date(Math.max(...dates))),
-      nb_mois: nbReleves,
+      nb_mois: nbMois,
+      nb_releves: nbReleves,
       nb_transactions: tx.length,
     },
   };
