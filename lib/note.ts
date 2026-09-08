@@ -43,10 +43,13 @@ const arrondiDemi = (x: number) => Math.round(x * 2) / 2;
  *  anglo-saxons sautent aux yeux dans un texte soigné. */
 const eur = (x: number) => String(Math.round(x * 100) / 100).replace(".", ",");
 
+/* Seuils relevés après le passage du banc d'essai : sur dix profils, sept
+   décrochaient « Félicitations du conseil ». Une mention que presque tout le
+   monde obtient n'est plus une mention, c'est une formule de politesse. */
 function mention(note: number): string {
-  if (note >= 16) return "Félicitations du conseil";
-  if (note >= 14) return "Compliments";
-  if (note >= 12) return "Encouragements";
+  if (note >= 18) return "Félicitations du conseil";
+  if (note >= 15.5) return "Compliments";
+  if (note >= 13) return "Encouragements";
   if (note >= 10) return "Doit confirmer";
   if (note >= 7) return "Avertissement de travail";
   return "Le conseil est inquiet";
@@ -65,7 +68,10 @@ export function calculerNote(stats: Stats): NoteGestion {
     const t = Math.abs(Math.round(taux));
     sous.push({
       matiere: "Tenue du compte",
-      note: palier(taux, [[20, 4], [10, 3], [0, 2], [-10, 1]]),
+      /* 20 % de reste donnait le maximum. C'est un taux d'épargne correct, pas
+         exceptionnel : deux profils du banc gardaient 23 % et obtenaient 4/4,
+         au même niveau qu'un profil qui en gardait 78 %. Le 4 commence à 35 %. */
+      note: palier(taux, [[35, 4], [20, 3], [8, 2], [0, 1]]),
       sur: 4,
       mesure: taux >= 0
         ? `${t} % de ce qui est entré est encore là à la fin`
@@ -90,21 +96,43 @@ export function calculerNote(stats: Stats): NoteGestion {
   if (credits > 0 && stats?.frais_decouvert) {
     const fr: number = stats.frais_decouvert.total ?? 0;
     const part = (100 * fr) / credits;
+    /* Ne pas payer de frais de découvert est la situation ordinaire, pas un
+       exploit : neuf profils du banc sur dix y arrivaient et empochaient 4/4
+       automatiquement. Le point de plus va à qui, en prime, n'a jamais fini un
+       mois dans le rouge. */
+    const tousPositifs = mois.length >= 2 && mois.every((m: any) => (m?.net ?? 0) >= 0);
     sous.push({
       matiere: "Distance avec le découvert",
-      note: fr === 0 ? 4 : palier(part, [[0.1, 3], [0.3, 2], [1, 1]], true),
+      note: fr === 0 ? (tousPositifs ? 4 : 3) : palier(part, [[0.1, 3], [0.3, 2], [1, 1]], true),
       sur: 4,
       mesure: fr === 0 ? "aucun frais de découvert sur la période" : `${eur(fr)} € de frais de découvert`,
     });
   }
 
   // 4 · vitesse post-salaire — combien part dans les 7 jours qui suivent la paie
-  const vitesse: any[] = stats?.vitesse_post_salaire ?? [];
+  /* Le dernier salaire de la période n'a presque jamais sept jours derrière lui :
+     le relevé s'arrête avant. La fenêtre est alors vide, elle vaut 0 %, et cette
+     fausse abstinence tire la moyenne vers le bas. Cinq profils du banc sur dix
+     décrochaient 4/4 grâce à ce zéro. On ne garde que les fenêtres complètes. */
+  const finPeriode = (() => {
+    const f = String(stats?.periode?.fin ?? "");
+    const d = new Date(f);
+    return isNaN(d.getTime()) ? null : d;
+  })();
+  const fenetreComplete = (v: any): boolean => {
+    if (!finPeriode) return true;
+    const m = String(v?.date_salaire ?? "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!m) return true;
+    const paie = new Date(`${m[3]}-${m[2]}-${m[1]}`);
+    if (isNaN(paie.getTime())) return true;
+    return paie.getTime() + 7 * 864e5 <= finPeriode.getTime();
+  };
+  const vitesse: any[] = (stats?.vitesse_post_salaire ?? []).filter(fenetreComplete);
   if (vitesse.length >= 2) {
     const moy = vitesse.reduce((s, v) => s + (v?.pct_7j ?? 0), 0) / vitesse.length;
     sous.push({
       matiere: "Sang-froid après salaire",
-      note: palier(moy, [[25, 4], [40, 3], [55, 2], [70, 1]], true),
+      note: palier(moy, [[20, 4], [35, 3], [50, 2], [65, 1]], true),
       sur: 4,
       mesure: `${Math.round(moy)} % du salaire dépensé dans les 7 jours`,
     });
@@ -120,11 +148,20 @@ export function calculerNote(stats: Stats): NoteGestion {
        même montant rapporté aux revenus (« 3 % de ce qui rentre ») explique la
        note. Le critère mesure une part, il doit afficher une part. */
     const pc = part < 10 ? part.toFixed(1).replace(".", ",").replace(",0", "") : String(Math.round(part));
+    const nbAbos: number = stats?.abonnements?.nb ?? 0;
+    /* Le poids seul ne suffit pas : un profil du banc payait neuf abonnements
+       pour 6,5 % de ses revenus et gardait 18/20. Neuf prélèvements à surveiller
+       chaque mois est un problème en soi — c'est le nombre de portes ouvertes,
+       pas la somme, qui fait qu'on en oublie une. */
+    const malus = nbAbos >= 8 ? 2 : nbAbos >= 5 ? 1 : 0;
+    const brut = palier(part, [[2, 4], [5, 3], [9, 2], [14, 1]], true);
     sous.push({
       matiere: "Résistance aux abonnements",
-      note: palier(part, [[3, 4], [6, 3], [10, 2], [15, 1]], true),
+      note: Math.max(0, brut - malus),
       sur: 4,
-      mesure: `${eur(abosMensuel)} € par mois d'abonnements, soit ${pc} % de ce qui rentre`,
+      mesure: nbAbos >= 5
+        ? `${nbAbos} abonnements, ${eur(abosMensuel)} € par mois, soit ${pc} % de ce qui rentre`
+        : `${eur(abosMensuel)} € par mois d'abonnements, soit ${pc} % de ce qui rentre`,
     });
   }
 
@@ -147,5 +184,17 @@ export function calculerNote(stats: Stats): NoteGestion {
   if (commissions >= 3) note = Math.min(note, 11);
   else if (commissions >= 1) note = Math.min(note, 15);
 
-  return { note, sur: 20, mention: mention(note), nb_criteres_retenus: sous.length, sous_notes: sous };
+  /* Un mois de relevé et deux critères mesurables donnaient 20/20 avec
+     « Félicitations du conseil » — sur sept lignes. La note reste celle du
+     calcul, punir le manque de données serait injuste, mais la mention doit
+     dire d'où elle sort : on ne décerne pas un bulletin sur un mois. */
+  const maigre = sous.length < 3 || nbMois < 2;
+
+  return {
+    note,
+    sur: 20,
+    mention: maigre ? "Trop peu de relevés pour un vrai bulletin" : mention(note),
+    nb_criteres_retenus: sous.length,
+    sous_notes: sous,
+  };
 }
