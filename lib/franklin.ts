@@ -163,20 +163,29 @@ function nbMots(report: Rapport): number {
  * Un paragraphe amputé de sa dernière phrase reste lisible ; c'est justement la
  * phrase qui explique la chute, celle qu'il fallait supprimer.
  */
+/* Première version de ces budgets : additionnés, ils autorisaient 6 300
+   caractères, soit mille mots de prose — plus que la cible. Couper à une limite
+   plus large que l'objectif ne coupe rien. Ils sont ici divisés par deux, et le
+   nombre d'éléments est réduit dans le schéma : moins de mensonges, moins de
+   matières, moins de faits. Un rapport se raccourcit d'abord en disant moins de
+   choses, pas en disant les mêmes choses plus vite. */
 const BUDGETS: Record<string, number> = {
-  "archetype.texte": 620,
-  "signature.texte": 560,
-  "verdict.texte": 480,
-  "note_finale.commentaire": 340,
-  "si_alors.intro": 200,
-  "si_alors.punchline": 160,
-  "fuites.intro": 200,
-  "fuites.punchline": 150,
-  "toi_vs_toi.punchline": 140,
-  "mensonges[].verite": 170,
-  "mensonges[].punchline": 140,
-  "bulletin[].appreciation": 130,
-  "cartes[].texte": 95,
+  "archetype.texte": 330,
+  "signature.texte": 300,
+  "verdict.texte": 260,
+  "note_finale.commentaire": 190,
+  "si_alors.intro": 110,
+  "si_alors.punchline": 95,
+  "fuites.intro": 110,
+  "fuites.punchline": 95,
+  "toi_vs_toi.punchline": 90,
+  "toi_vs_toi.titre": 44,
+  "mensonges[].mensonge": 70,
+  "mensonges[].verite": 105,
+  "mensonges[].punchline": 90,
+  "bulletin[].appreciation": 95,
+  "cartes[].texte": 85,
+  "archetype.sous_titre": 60,
 };
 
 function couperAuxPhrases(texte: string, budget: number): string {
@@ -198,6 +207,16 @@ function couperAuxPhrases(texte: string, budget: number): string {
 
 function raccourcir(report: Rapport): Rapport {
   const r = JSON.parse(JSON.stringify(report)) as Record<string, any>;
+
+  /* Deux colonnes de quatre faits, c'est huit lignes qui répètent souvent le
+     même contraste. Trois suffisent, et la comparaison est plus nette. */
+  for (const cote of ["gauche", "droite"]) {
+    const c = r.toi_vs_toi?.[cote];
+    if (Array.isArray(c?.faits)) c.faits = c.faits.slice(0, 3).map((f: string) => couperAuxPhrases(String(f), 75));
+  }
+  if (Array.isArray(r.mensonges)) r.mensonges = r.mensonges.slice(0, 3);
+  if (Array.isArray(r.bulletin)) r.bulletin = r.bulletin.slice(0, 5);
+  if (Array.isArray(r.fuites?.lignes)) r.fuites.lignes = r.fuites.lignes.slice(0, 5);
   for (const [chemin, budget] of Object.entries(BUDGETS)) {
     const [bloc, champBrut] = chemin.split(".");
     const tableau = bloc.endsWith("[]");
