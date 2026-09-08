@@ -157,7 +157,10 @@ export function calculerNote(stats: Stats): NoteGestion {
     const brut = palier(part, [[2, 4], [5, 3], [9, 2], [14, 1]], true);
     sous.push({
       matiere: "Résistance aux abonnements",
-      note: Math.max(0, brut - malus),
+      /* Le malus retire des points, il n'annule pas le critère : neuf abonnements
+         qui pèsent 6,5 % des revenus, ce n'est pas la même chose que cinq qui en
+         pèsent 19. Le zéro reste réservé à qui l'a mérité par le poids seul. */
+      note: brut > 0 ? Math.max(1, brut - malus) : 0,
       sur: 4,
       mesure: nbAbos >= 5
         ? `${nbAbos} abonnements, ${eur(abosMensuel)} € par mois, soit ${pc} % de ce qui rentre`
