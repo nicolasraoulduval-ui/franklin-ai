@@ -19,13 +19,35 @@ const paras = (t?: string) => (t ?? "").split(/\n\n+/).map((p) => p.trim()).filt
 function barChart2(s: Stats): string {
   const r = s.depenses_par_categorie?.resto_bars, c = s.depenses_par_categorie?.courses;
   if (!r || !c) return "";
-  const h2 = Math.max(6, Math.round((210 * c.nb) / Math.max(r.nb, 1)));
+  /* Sous six passages cumulés, le dessin ment plus qu'il n'informe. Un profil du
+     banc d'essai avec un restaurant et deux courses obtenait quand même son
+     graphique — et une légende qui annonçait « 1 fois plus souvent » alors que
+     c'était exactement l'inverse. */
+  if (r.nb + c.nb < 6) return "";
+  /* La barre des restos était figée à 210 px et celle des courses calculée par
+     rapport à elle. Dès que les courses l'emportaient, la barre dépassait le
+     cadre : le plus grand nombre s'affichait au-dessus d'une colonne qui sortait
+     du dessin. On normalise sur le maximum des deux. */
+  const mx = Math.max(r.nb, c.nb, 1);
+  const h = (n: number) => Math.max(6, Math.round((210 * n) / mx));
+  const fois = (a: number, b: number) => String(Math.round((10 * a) / Math.max(b, 1)) / 10).replace(".", ",");
+  const ecart = mx / Math.max(Math.min(r.nb, c.nb), 1);
+  const legende =
+    c.nb === 0
+      ? "Zéro passage.<br>Ta cuisine est décorative."
+      : c.nb * 4 <= r.nb
+        ? "On la voit à peine.<br>Comme ta poêle."
+        : ecart < 1.25
+          ? "Autant l'un que l'autre.<br>Une vie parfaitement partagée."
+          : r.nb > c.nb
+            ? `${fois(r.nb, c.nb)} fois plus souvent.<br>Ta poêle a des horaires.`
+            : `${fois(c.nb, r.nb)} fois plus de courses.<br>Ta poêle, elle, travaille.`;
   return `<div class="chart"><div class="chart-title mono">PASSAGES — RESTOS &amp; BARS VS COURSES</div>
     <div class="bars2">
-      <div class="bcol"><div class="bval mono">${r.nb}</div><div class="bar" style="height:210px"></div><div class="blab mono">RESTOS &amp; BARS</div></div>
-      <div class="bcol"><div class="bval mono">${c.nb}</div><div class="bar tiny" style="height:${h2}px"></div><div class="blab mono">COURSES</div></div>
+      <div class="bcol"><div class="bval mono">${r.nb}</div><div class="bar" style="height:${h(r.nb)}px"></div><div class="blab mono">RESTOS &amp; BARS</div></div>
+      <div class="bcol"><div class="bval mono">${c.nb}</div><div class="bar${c.nb < r.nb ? " tiny" : ""}" style="height:${h(c.nb)}px"></div><div class="blab mono">COURSES</div></div>
       <div class="annot"><svg viewBox="0 0 120 60" width="110"><path d="M8 8 q60 -6 92 34" fill="none" stroke="#14161f" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="1 5"/><path d="M100 42 l0 -12 M100 42 l-12 -2" fill="none" stroke="#14161f" stroke-width="2.2" stroke-linecap="round"/></svg>
-      <div class="mono">${c.nb === 0 ? "Zéro passage.<br>Ta cuisine est décorative." : c.nb * 4 <= r.nb ? "On la voit à peine.<br>Comme ta poêle." : `${Math.round(r.nb / Math.max(c.nb, 1))} fois plus souvent.<br>Ta poêle a des horaires.`}</div></div>
+      <div class="mono">${legende}</div></div>
     </div></div>`;
 }
 
