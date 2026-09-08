@@ -135,6 +135,27 @@ export function orphans(report: Rapport, allowed: Set<number>): string[] {
  * indication, pas comme une contrainte. Le seul mécanisme qui tient dans ce
  * fichier est celui des chiffres orphelins : on mesure, et on redemande.
  */
+/**
+ * Traduction des clés techniques restées dans la prose.
+ *
+ * Le prompt interdit d'écrire « resto_bars » ou « ia_outils » ; le modèle le
+ * fait quand même de temps en temps, parce que la clé est sous ses yeux dans le
+ * stats.json. Une consigne ne suffit pas à garantir un résultat : on répare donc
+ * après coup, où c'est déterministe.
+ */
+const JARGON = new RegExp("\\b(" + Object.keys(LIBELLES).filter((k) => k.includes("_")).join("|") + ")\\b", "g");
+
+function sansJargon<T>(valeur: T): T {
+  if (typeof valeur === "string") return valeur.replace(JARGON, (k) => LIBELLES[k] ?? k) as unknown as T;
+  if (Array.isArray(valeur)) return valeur.map(sansJargon) as unknown as T;
+  if (valeur && typeof valeur === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, val] of Object.entries(valeur)) out[k] = sansJargon(val);
+    return out as unknown as T;
+  }
+  return valeur;
+}
+
 function nbMots(report: Rapport): number {
   const morceaux: string[] = [];
   const parcourir = (x: unknown): void => {
@@ -144,7 +165,8 @@ function nbMots(report: Rapport): number {
   };
   /* Le bulletin et les notes sont des libellés courts imposés par le format :
      les compter reviendrait à sanctionner la structure, pas le bavardage. */
-  const { bulletin, ...prose } = report as Record<string, unknown>;
+  const { bulletin: _bulletin, ...prose } = report as unknown as Record<string, unknown>;
+  void _bulletin;
   parcourir(prose);
   return morceaux.join(" ").trim().split(/\s+/).filter(Boolean).length;
 }
