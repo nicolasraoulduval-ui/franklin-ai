@@ -149,6 +149,71 @@ function nbMots(report: Rapport): number {
   return morceaux.join(" ").trim().split(/\s+/).filter(Boolean).length;
 }
 
+/**
+ * Coupe ce qui dépasse, à la phrase près.
+ *
+ * Trois choses ont été tentées pour tenir la longueur : la consigne dans le
+ * prompt (ignorée), les bornes maxLength du schéma (l'API les traite comme une
+ * indication), et une régénération quand c'est trop long (le modèle raccourcit
+ * un peu puis se rétablit, et à la troisième tentative on accepte). Mesure
+ * finale : 1 787 mots pour une limite de 800.
+ *
+ * Reste ce qui ne se négocie pas. On coupe à la dernière phrase complète sous
+ * le budget — jamais au milieu d'un mot, jamais avec des points de suspension.
+ * Un paragraphe amputé de sa dernière phrase reste lisible ; c'est justement la
+ * phrase qui explique la chute, celle qu'il fallait supprimer.
+ */
+const BUDGETS: Record<string, number> = {
+  "archetype.texte": 620,
+  "signature.texte": 560,
+  "verdict.texte": 480,
+  "note_finale.commentaire": 340,
+  "si_alors.intro": 200,
+  "si_alors.punchline": 160,
+  "fuites.intro": 200,
+  "fuites.punchline": 150,
+  "toi_vs_toi.punchline": 140,
+  "mensonges[].verite": 170,
+  "mensonges[].punchline": 140,
+  "bulletin[].appreciation": 130,
+  "cartes[].texte": 95,
+};
+
+function couperAuxPhrases(texte: string, budget: number): string {
+  const t = texte.trim();
+  if (t.length <= budget) return t;
+  const tronque = t.slice(0, budget);
+  /* On cherche la dernière fin de phrase. Le point suivi d'un espace évite de
+     couper sur « 1 234,56 € » ou sur une abréviation collée. */
+  const fins = [...tronque.matchAll(/[.!?…]["»]?(?=\s|$)/g)];
+  if (fins.length) {
+    const fin = fins[fins.length - 1];
+    const coupe = t.slice(0, (fin.index ?? 0) + fin[0].length).trim();
+    /* Ne pas amputer plus de la moitié : mieux vaut un texte un peu long qu'un
+       texte devenu incompréhensible. */
+    if (coupe.length >= budget * 0.5) return coupe;
+  }
+  return t;
+}
+
+function raccourcir(report: Rapport): Rapport {
+  const r = JSON.parse(JSON.stringify(report)) as Record<string, any>;
+  for (const [chemin, budget] of Object.entries(BUDGETS)) {
+    const [bloc, champBrut] = chemin.split(".");
+    const tableau = bloc.endsWith("[]");
+    const nom = bloc.replace("[]", "");
+    const champ = champBrut;
+    const cible = r[nom];
+    if (!cible) continue;
+    if (tableau && Array.isArray(cible)) {
+      for (const item of cible) if (typeof item?.[champ] === "string") item[champ] = couperAuxPhrases(item[champ], budget);
+    } else if (!tableau && typeof cible[champ] === "string") {
+      cible[champ] = couperAuxPhrases(cible[champ], budget);
+    }
+  }
+  return r as Rapport;
+}
+
 function nomsDePersonnes(stats: any): string[] {
   const liste: string[] = [];
   for (const b of stats?.top_beneficiaires?.liste ?? []) {
@@ -221,7 +286,7 @@ export async function generateRapport(stats: unknown, prenom: string): Promise<R
       continue;
     }
 
-    if (!bad.length) return sansJargon(report);
+    if (!bad.length) return raccourcir(sansJargon(report));
     userMsg += `\n\nATTENTION : ta version précédente citait des chiffres absents du JSON : ${bad.slice(0, 10).join(", ")}. ` +
       `Régénère en n'utilisant QUE les chiffres du stats.json.`;
   }
