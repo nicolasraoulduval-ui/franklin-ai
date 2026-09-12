@@ -183,7 +183,7 @@ export default function Analyse() {
               mise au point, décale la page et n'y revient pas. */}
           <input placeholder="Ton prénom" value={prenom} onChange={(e) => setPrenom(e.target.value)}
             autoComplete="given-name" autoCapitalize="words"
-            style={{ width: "100%", padding: "14px", border: "2px solid #14161f", fontFamily: mono, fontSize: 16 }} />
+            style={{ width: "100%", boxSizing: "border-box", padding: "14px", border: "2px solid #14161f", fontFamily: mono, fontSize: 16 }} />
 
           <label style={{ display: "flex", gap: 11, alignItems: "flex-start", marginTop: 18, cursor: "pointer", fontSize: 13.5, lineHeight: 1.5, color: "#3c3f4c" }}>
             <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)}
