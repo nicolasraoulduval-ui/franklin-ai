@@ -11,6 +11,11 @@ export interface ReportRecord {
   preview: string[];
   report_html?: string | null;
   created_at?: string;
+  /* Les deux bornes du chronomètre. Sans elles, le délai entre le paiement et
+     la lecture n'était mesurable nulle part : le 13/09, un client a attendu son
+     rapport toute une journée sans que rien ne puisse le signaler. */
+  paid_at?: string | null;
+  ready_at?: string | null;
 }
 
 const SB_URL = process.env.SUPABASE_URL;
