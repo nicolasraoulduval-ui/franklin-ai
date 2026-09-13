@@ -39,7 +39,9 @@ export async function POST(req: Request) {
     if (rid) {
       const rec = await getRecord(rid);
       if (rec && rec.status === "preview_ready") {
-        await updateRecord(rid, { status: "paid" });
+        /* paid_at démarre le chronomètre des 120 secondes ; sans lui, aucun délai
+           n'est mesurable après coup — c'est ce qui a rendu l'incident du 13/09 invisible. */
+        await updateRecord(rid, { status: "paid", paid_at: new Date().toISOString() });
         /* Le rapport n'est écrit qu'à la première visite de /rapport/<token> :
            c'est le navigateur du client qui déclenche la rédaction. Celui qui
            ferme l'onglet avant d'être redirigé par Stripe payait donc pour rien,
