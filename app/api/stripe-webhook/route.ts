@@ -41,7 +41,16 @@ export async function POST(req: Request) {
       if (rec && rec.status === "preview_ready") {
         /* paid_at démarre le chronomètre des 120 secondes ; sans lui, aucun délai
            n'est mesurable après coup — c'est ce qui a rendu l'incident du 13/09 invisible. */
-        await updateRecord(rid, { status: "paid", paid_at: new Date().toISOString() });
+        const maintenant = new Date().toISOString();
+
+        /* Le cas heureux : le rapport a été écrit pendant que le client lisait son
+           aperçu. Il n'y a plus rien à fabriquer, seulement à ouvrir la porte — la
+           lecture est immédiate au lieu d'une minute d'attente. */
+        if (rec?.report_html) {
+          await updateRecord(rid, { status: "ready", paid_at: maintenant, ready_at: maintenant });
+        } else {
+          await updateRecord(rid, { status: "paid", paid_at: maintenant });
+        }
         /* Le rapport n'est écrit qu'à la première visite de /rapport/<token> :
            c'est le navigateur du client qui déclenche la rédaction. Celui qui
            ferme l'onglet avant d'être redirigé par Stripe payait donc pour rien,
@@ -55,6 +64,7 @@ export async function POST(req: Request) {
            quatre secondes est donc le cas normal, pas une panne — et Stripe, lui,
            veut sa réponse tout de suite. */
         const origine = new URL(req.url).origin;
+        if (!rec?.report_html) {
         /* POST, pas GET : le GET rend l'écran d'attente, c'est le POST qui écrit
            le rapport. Le premier jet de ce correctif faisait un GET et ne
            fabriquait donc rien du tout. Mesuré le 13/09 : la fabrication prend
@@ -65,7 +75,8 @@ export async function POST(req: Request) {
           method: "POST",
           signal: AbortSignal.timeout(50_000),
           cache: "no-store",
-        }).catch(() => {});
+          }).catch(() => {});
+        }
         /* Une vente sans notification, c'est une vente qu'on découvre trois jours
            plus tard en fouillant la base. On prévient tout de suite, avec de quoi
            réagir : qui, combien de relevés, quelle note, et le lien du rapport. */
