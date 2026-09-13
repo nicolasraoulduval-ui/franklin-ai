@@ -34,7 +34,7 @@ export async function GET(req: Request) {
   const limite = new Date(Date.now() - 3 * 60_000).toISOString();
   const q =
     "franklin_reports?status=eq.paid&report_html=is.null" +
-    `&created_at=lt.${limite}&select=token,prenom&order=created_at.asc&limit=3`;
+    `&created_at=lt.${limite}&select=token,prenom&order=created_at.asc&limit=1`;
 
   let restes: Array<{ token: string; prenom: string }>;
   try {
@@ -51,16 +51,18 @@ export async function GET(req: Request) {
 
   if (!restes.length) return NextResponse.json({ ok: true, relances: 0 });
 
-  /* On n'attend pas la réponse : la rédaction prend une à deux minutes, bien plus
-     que le budget de cette route. La page tourne dans sa propre invocation et
-     continue sans nous — il suffit de l'avoir réveillée. Le délai dépassé est donc
-     le cas normal, pas une panne. */
+  /* POST, pas GET : le GET rend l'écran d'attente, seul le POST écrit le rapport.
+     Le premier jet de cette route faisait un GET et ne fabriquait donc rien.
+     Mesuré le 13/09 sur trois fabrications : 31 s, 63 s, 63 s — la durée dépend du
+     nombre de fois où le validateur de chiffres rejette le brouillon. On attend
+     donc largement, quitte à ne reprendre qu'un rapport par passage. */
   const origin = new URL(req.url).origin;
   const lances: string[] = [];
   for (const r of restes) {
     try {
       await fetch(`${origin}/rapport/${r.token}`, {
-        signal: AbortSignal.timeout(4000),
+        method: "POST",
+        signal: AbortSignal.timeout(110_000),
         cache: "no-store",
       });
     } catch {
