@@ -53,8 +53,15 @@ export async function POST(req: Request) {
            quatre secondes est donc le cas normal, pas une panne — et Stripe, lui,
            veut sa réponse tout de suite. */
         const origine = new URL(req.url).origin;
+        /* POST, pas GET : le GET rend l'écran d'attente, c'est le POST qui écrit
+           le rapport. Le premier jet de ce correctif faisait un GET et ne
+           fabriquait donc rien du tout. Mesuré le 13/09 : la fabrication prend
+           une trentaine de secondes, on lui en laisse cinquante avant de rendre
+           la main à Stripe, qui ne patiente pas indéfiniment. Le POST est
+           idempotent : si le client arrive entretemps, rien n'est écrit deux fois. */
         await fetch(`${origine}/rapport/${rid}`, {
-          signal: AbortSignal.timeout(4000),
+          method: "POST",
+          signal: AbortSignal.timeout(50_000),
           cache: "no-store",
         }).catch(() => {});
         /* Une vente sans notification, c'est une vente qu'on découvre trois jours
