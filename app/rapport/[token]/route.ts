@@ -256,7 +256,12 @@ fabriquer(2);
 export async function POST(_req: Request, { params }: { params: { token: string } }) {
   const rec = await getRecord(params.token);
   if (!rec) return new Response("introuvable", { status: 404 });
-  if (rec.status === "preview_ready") return new Response("non payé", { status: 402 });
+  /* On fabrique désormais aussi pour un aperçu non payé : la rédaction dure une
+     trentaine de secondes, autant les passer pendant que le client lit ses trois
+     vérités gratuites plutôt qu'après sa carte bancaire. Rien n'est livré pour
+     autant — le GET ci-dessus continue de refuser tant que ce n'est pas payé, et
+     le statut reste « preview_ready » jusqu'à l'encaissement. */
+  if (rec.report_html) return new Response(null, { status: 204 });
   if (rec.report_html) return new Response(null, { status: 204 });
 
   try {
@@ -267,10 +272,12 @@ export async function POST(_req: Request, { params }: { params: { token: string 
      s'en sert pour dire, client par client, si l'engagement des 120 secondes a été
      tenu — mesuré le 13/09 : 31 s pour un premier jet accepté, 63 s quand le
      validateur de chiffres en refuse un. */
+  const paye = rec.status === "paid" || rec.status === "ready";
   await updateRecord(params.token, {
     report_html: html,
-    status: "ready",
-    ready_at: new Date().toISOString(),
+    /* Un rapport écrit d'avance n'est pas un rapport dû : tant que la carte n'a
+       pas répondu, il dort en base et le statut ne bouge pas. */
+    ...(paye ? { status: "ready", ready_at: new Date().toISOString() } : {}),
   });
 
     return new Response(null, { status: 204 });
