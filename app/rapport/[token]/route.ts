@@ -263,7 +263,15 @@ export async function POST(_req: Request, { params }: { params: { token: string 
     const rapport = await generateRapport(rec.stats, rec.prenom);
     const date = new Date().toLocaleDateString("fr-FR");
     const html = renderRapport(rapport, rec.stats as Record<string, unknown>, rec.prenom, date);
-    await updateRecord(params.token, { report_html: html, status: "ready" });
+    /* ready_at ferme le chronomètre ouvert par le webhook. La vue franklin_delais
+     s'en sert pour dire, client par client, si l'engagement des 120 secondes a été
+     tenu — mesuré le 13/09 : 31 s pour un premier jet accepté, 63 s quand le
+     validateur de chiffres en refuse un. */
+  await updateRecord(params.token, {
+    report_html: html,
+    status: "ready",
+    ready_at: new Date().toISOString(),
+  });
 
     return new Response(null, { status: 204 });
   } catch (e) {
