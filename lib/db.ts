@@ -25,7 +25,7 @@ const TABLE = "franklin_reports";
 const g = globalThis as unknown as { __franklinStore?: Map<string, ReportRecord> };
 const mem = (g.__franklinStore ??= new Map());
 
-async function sb(path: string, init: RequestInit): Promise<Response> {
+async function sb(path: string, init: RequestInit, essais = 2): Promise<Response> {
   const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
     ...init,
     headers: {
@@ -34,6 +34,16 @@ async function sb(path: string, init: RequestInit): Promise<Response> {
       ...(init.headers ?? {}),
     },
   });
+  /* Supabase renvoie parfois un 504 sur une écriture volumineuse — c'est arrivé
+     le 13/09 en enregistrant un rapport de 24 Ko : la rédaction avait réussi, les
+     trente secondes de travail étaient bonnes, et tout a été perdu sur le dernier
+     geste. On retente deux fois avant d'abandonner. Les 5xx et les coupures réseau
+     seulement : une erreur 4xx est une faute de notre côté, la répéter ne
+     l'arrangera pas. */
+  if (res.status >= 500 && essais > 0) {
+    await new Promise((r) => setTimeout(r, 800));
+    return sb(path, init, essais - 1);
+  }
   if (!res.ok) throw new Error(`supabase ${res.status}: ${(await res.text()).slice(0, 200)}`);
   return res;
 }
