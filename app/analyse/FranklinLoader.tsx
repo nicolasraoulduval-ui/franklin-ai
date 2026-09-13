@@ -121,7 +121,7 @@ export default function FranklinLoader() {
           <div className="fl-status">
             <div className="fl-phase">{p.t}</div>
             <div className="fl-bar"><i style={{ width: `${pct.toFixed(1)}%` }} /></div>
-            <div className="fl-count"><b>{n}</b> transactions lues</div>
+            <div className="fl-count"><b>{Math.round(pct)} %</b> analysé</div>
           </div>
         </div>
 
