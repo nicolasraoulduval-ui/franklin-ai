@@ -98,7 +98,25 @@ export default function TutoExport() {
            des libellés d'écran en 8,5 px : le tutoriel censé débloquer le client
            devenait le premier endroit où il décroche. auto-fit empile les cartes
            sous 620 px et les remet côte à côte dès qu'il y a la place. */
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 12, marginBottom: 18 }}>
+        <style>{`
+        /* Sur ordinateur, les trois écrans côte à côte : on lit le chemin d'un
+           coup d'oeil. Sur téléphone, auto-fit les empilait — trois grandes
+           cartes l'une sous l'autre, et le tutoriel censé rassurer devenait un
+           mur. Le carrousel n'en montre qu'une, nette, et laisse glisser. */
+        .tuto-cartes{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+          gap:12px;margin-bottom:18px}
+        @media(max-width:620px){
+          .tuto-cartes{display:flex;grid-template-columns:none;overflow-x:auto;
+            scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
+            /* la marge négative puis le padding font mordre le carrousel sur les
+               bords de l'écran : on devine la carte suivante, donc on glisse. */
+            margin-left:-24px;margin-right:-24px;padding:2px 24px 10px;
+            scrollbar-width:none}
+          .tuto-cartes::-webkit-scrollbar{display:none}
+          .tuto-cartes > *{flex:0 0 82%;scroll-snap-align:center}
+        }
+      `}</style>
+      <div className="tuto-cartes">
           {b.ecrans.map((lignes, i) => (
             <div key={i} style={{ border: "2.5px solid #14161f", borderRadius: 12, overflow: "hidden", background: "#fff" }}>
               <Ecran lignes={lignes} cible={b.cible[i]} />
