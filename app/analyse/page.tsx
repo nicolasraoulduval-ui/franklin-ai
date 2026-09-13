@@ -70,6 +70,16 @@ export default function Analyse() {
       suivre("apercu_vu");
       setPreview(j.preview);
       setRid(j.report_id);
+
+      /* On lance la rédaction maintenant, pas après le paiement.
+         Elle prend une trentaine de secondes — autant les passer pendant que le
+         client lit ses trois vérités gratuites et se décide, plutôt qu'après sa
+         carte bancaire, quand chaque seconde d'attente ressemble à une panne.
+         S'il paie, le rapport est déjà écrit : il s'ouvre sans délai.
+         S'il ne paie pas, il ne verra jamais ce texte — le serveur refuse de le
+         livrer tant que l'encaissement n'a pas eu lieu. On ne bloque rien sur
+         cet appel : il vit sa vie pendant que le client lit. */
+      fetch(`/rapport/${j.report_id}`, { method: "POST" }).catch(() => {});
       window.scrollTo({ top: 0 });
     } catch (e) {
       suivre("upload_echoue", { motif: e instanceof Error ? e.message.slice(0, 80) : "inconnu" });
