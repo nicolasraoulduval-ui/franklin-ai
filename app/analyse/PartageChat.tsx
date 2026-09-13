@@ -43,7 +43,6 @@ function Avatar({ c }: { c: string }) {
         <path d="M4.5 27c1.4-5.4 5-8 9.5-8s8.1 2.6 9.5 8z" fill="rgba(255,255,255,.9)" />
       </svg>
     </div>
-    </div>
   );
 }
 
@@ -178,6 +177,7 @@ export default function PartageChat() {
         </Entrant>
         <Entrant nom="Léo" couleur="#00A884" heure="21:52">bon je le fais</Entrant>
       </div>
+    </div>
     </div>
   );
 }
