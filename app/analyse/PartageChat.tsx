@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useRef, useState } from "react";
 
 /** Aperçu du partage, affiché juste avant le paiement.
  *
@@ -42,6 +43,7 @@ function Avatar({ c }: { c: string }) {
         <path d="M4.5 27c1.4-5.4 5-8 9.5-8s8.1 2.6 9.5 8z" fill="rgba(255,255,255,.9)" />
       </svg>
     </div>
+    </div>
   );
 }
 
@@ -75,8 +77,40 @@ function Entrant({ nom, couleur, heure, children }: { nom: string; couleur: stri
 }
 
 export default function PartageChat() {
+  /* Les bulles, les avatars et les horodatages sont dimensionnés en pixels fixes :
+     la conversation occupe 558 px de large quoi qu'il arrive. Sur un téléphone de
+     375 px, elle était simplement rognée — les bulles blanches se retrouvaient
+     coupées net au bord du cadre et débordaient en bandes disgracieuses.
+     Plutôt que de rendre chaque bulle élastique, on réduit l'ensemble à l'échelle :
+     la maquette garde ses proportions exactes, et rentre partout. Le conteneur
+     compense la hauteur perdue, sinon la mise à l'échelle laisse un trou blanc
+     sous la conversation. */
+  const LARGEUR = 558;
+  const boite = useRef<HTMLDivElement>(null);
+  const contenu = useRef<HTMLDivElement>(null);
+  const [k, setK] = useState(1);
+  const [hauteur, setHauteur] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    const mesurer = () => {
+      const dispo = boite.current?.clientWidth ?? LARGEUR;
+      const f = Math.min(1, dispo / LARGEUR);
+      setK(f);
+      /* La mise à l'échelle est visuelle : le navigateur réserve toujours la
+         hauteur d'origine et laisse un vide sous la conversation. On la reprend
+         à la main, à partir de la hauteur réelle du contenu. */
+      const h = contenu.current?.offsetHeight;
+      if (h) setHauteur(h * f);
+    };
+    mesurer();
+    window.addEventListener("resize", mesurer);
+    return () => window.removeEventListener("resize", mesurer);
+  }, []);
+
   return (
-    <div style={{
+    <div ref={boite} style={{ height: hauteur, overflow: "hidden" }}>
+    <div ref={contenu} style={{
+      width: LARGEUR, transform: `scale(${k})`, transformOrigin: "top left",
       border: "2.5px solid #14161f", borderRadius: 18, overflow: "hidden",
       boxShadow: "6px 6px 0 rgba(20,22,31,.12)", fontFamily: SYS, background: FOND,
     }}>
