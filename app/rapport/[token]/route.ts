@@ -42,6 +42,9 @@ const BARRE_HAUT = `
     font-size:12.5px;padding:10px 15px;border-radius:9px;white-space:nowrap}
   @media print{#fr-barre{display:none !important}}
   @media(max-width:560px){#fr-barre{padding:9px 14px}#fr-barre a.autre{font-size:11.5px;padding:9px 12px}}
+.encaisse{font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.08em;
+  text-transform:uppercase;color:#1a7f4b;background:#e8f6ee;border:2px solid #1a7f4b;
+  border-radius:999px;padding:7px 16px;display:inline-block;margin-bottom:26px;font-weight:700}
 </style>
 <div id="fr-barre">
   <a class="lg" href="/">FRANKLIN <i>AI</i></a>
@@ -225,10 +228,11 @@ const ATTENTE = `<!DOCTYPE html>
     <rect x="26" y="66" width="38" height="6" rx="2" fill="#2f4df0"/>
     <rect x="26" y="76" width="26" height="4" rx="2" fill="#d8d8cf"/>
   </svg>
+  <p class="encaisse">✓ Paiement confirmé</p>
   <h1>Franklin écrit<br>ton rapport.</h1>
   <div class="j"><p id="j">Il relit tes lignes une dernière fois.</p></div>
   <div class="barre"><i></i></div>
-  <p class="pied">Une à deux minutes. Ne ferme pas cette page —<br>elle se rechargera toute seule.</p>
+  <p class="pied">Environ trente secondes. Ne ferme pas cette page —<br>elle s'ouvrira toute seule.</p>
 </div>
 <script>
 var J = ["Il relit tes lignes une dernière fois.",
