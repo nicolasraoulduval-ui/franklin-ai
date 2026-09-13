@@ -150,7 +150,7 @@ export default function PartageChat() {
               textAlign: "center", fontFamily: "'Gabarito',sans-serif", fontWeight: 900,
               fontSize: 19, lineHeight: 1.15, letterSpacing: "-.01em",
             }}>
-              LE MÉCÈNE<br />DES ABONNEMENTS
+              LE CLIENT PRÉFÉRÉ<br />DE NEUF ENTREPRISES
             </div>
             <div style={{ padding: "5px 7px 3px", fontSize: 14.2, lineHeight: 1.36 }}>
               mon rapport Franklin. lisez ça.
