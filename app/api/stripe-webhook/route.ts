@@ -40,6 +40,23 @@ export async function POST(req: Request) {
       const rec = await getRecord(rid);
       if (rec && rec.status === "preview_ready") {
         await updateRecord(rid, { status: "paid" });
+        /* Le rapport n'est écrit qu'à la première visite de /rapport/<token> :
+           c'est le navigateur du client qui déclenche la rédaction. Celui qui
+           ferme l'onglet avant d'être redirigé par Stripe payait donc pour rien,
+           sans que rien ne le signale — pas d'erreur, juste un vide. C'est arrivé
+           le 13/09/2026, et depuis que le champ e-mail a quitté le tunnel, il n'y
+           avait même plus de quoi prévenir le client.
+
+           On réveille la page ici, où l'appel ne dépend plus du navigateur de
+           personne. On n'attend pas la fin : la rédaction prend une à deux minutes
+           et se poursuit dans sa propre invocation. Le délai dépassé au bout de
+           quatre secondes est donc le cas normal, pas une panne — et Stripe, lui,
+           veut sa réponse tout de suite. */
+        const origine = new URL(req.url).origin;
+        await fetch(`${origine}/rapport/${rid}`, {
+          signal: AbortSignal.timeout(4000),
+          cache: "no-store",
+        }).catch(() => {});
         /* Une vente sans notification, c'est une vente qu'on découvre trois jours
            plus tard en fouillant la base. On prévient tout de suite, avec de quoi
            réagir : qui, combien de relevés, quelle note, et le lien du rapport. */
