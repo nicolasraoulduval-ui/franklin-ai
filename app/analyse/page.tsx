@@ -114,7 +114,7 @@ export default function Analyse() {
       )}
 
       {!preview && etape > 1 && (
-        <button onClick={() => aller(etape - 1)} style={{ padding: "10px 12px", margin: "-10px -12px",
+        <button onClick={() => aller(etape - 1)} style={{ minHeight: 44, display: "inline-flex", alignItems: "center",
           background: "none", border: "none", cursor: "pointer", padding: 0, marginBottom: 14,
           fontFamily: mono, fontSize: 13, color: "#6b6f7e",
         }}>← retour</button>
