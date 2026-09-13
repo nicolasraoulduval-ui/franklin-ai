@@ -50,8 +50,8 @@ const BULLETIN = [
 ];
 
 const CARTES = [
-  { t: "LE MÉCÈNE DES ABONNEMENTS", bg: "#2f4df0", c: "#fff" },
-  { t: "Neuf abonnements actifs. Zéro souvenir d'en avoir signé un seul.", bg: "#fffdf8", c: "#14161f" },
+  { t: "LE CLIENT PRÉFÉRÉ DE NEUF ENTREPRISES", bg: "#2f4df0", c: "#fff" },
+  { t: "Neuf abonnements actifs. Aucun n'a eu à te convaincre depuis des mois.", bg: "#fffdf8", c: "#14161f" },
   { t: "« Quatorze passages. Ils devraient graver ton nom sur un tabouret. »", bg: "#14161f", c: "#fff" },
   { t: "Ta banque voit tout. Elle ne dit rien.", bg: "#9cc3ff", c: "#14161f" },
 ];
@@ -80,19 +80,13 @@ export default function Exemple() {
 
       <h1 style={{ fontFamily: gab, fontWeight: 900, fontSize: 40, lineHeight: 1.03, margin: "0 0 6px" }}>
         <span style={{ background: "#9cc3ff", padding: "0 6px", borderRadius: 4, boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone" }}>
-          Le mécène des abonnements.
+          Le client préféré de neuf entreprises.
         </span>
       </h1>
       <p style={{ fontSize: 17, color: "#4a4f60", margin: "14px 0 8px" }}>
         Neuf abonnements actifs. Zéro souvenir d&apos;en avoir signé un seul.
       </p>
-      <p style={{ fontSize: 16.5, lineHeight: 1.7, marginBottom: 8 }}>
-        Tu ne t&apos;abonnes pas à des services : tu leur verses une pension. Sur six mois
-        et 392 lignes, une constante se dégage — tu paies avec une régularité admirable
-        des choses dont tu as oublié l&apos;existence. 148,18 € par mois quittent ton compte
-        sans que personne ne les réclame, sans que tu les voies partir. Ce n&apos;est pas
-        de la négligence. C&apos;est une forme de générosité.
-      </p>
+      <p style={{ fontSize: 16.5, lineHeight: 1.7, marginBottom: 8 }}>Neuf sociétés prélèvent ton compte chaque mois. Aucune n'a eu besoin de t'appeler, de t'envoyer une promotion, ni même de te rappeler qu'elle existait. Tu es le client dont rêvent les directions commerciales : celui qui paie sans qu'on lui demande et qui ne compare jamais. Fitness Park t'a facturé huit fois depuis mars. Il ne t'a pas vu une seule fois. Sur l'année, 1 778,16 € changent de mains sans qu'une seule décision soit prise.</p>
 
       <Section titre="Ce que tu te racontes" />
       {MENSONGES.map((x, i) => (
