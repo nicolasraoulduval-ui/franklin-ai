@@ -72,7 +72,7 @@ const SUIVI_LANDING = `<script>
 (function(){
   try{
     var s = Math.random().toString(36).slice(2,12);
-    var c = JSON.stringify({nom:"landing_vue",session:s,props:{}});
+    var c = JSON.stringify({nom:"landing_vue",session:s,props:{},source:(function(){try{var u=new URLSearchParams(location.search).get("s");if(u){sessionStorage.setItem("fsrc",u);return u}return sessionStorage.getItem("fsrc")}catch(e){return null}})()});
     if(navigator.sendBeacon) navigator.sendBeacon("/api/evt", new Blob([c],{type:"application/json"}));
     else fetch("/api/evt",{method:"POST",headers:{"content-type":"application/json"},body:c,keepalive:true});
   }catch(e){}
