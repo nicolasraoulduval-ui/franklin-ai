@@ -200,7 +200,13 @@ export function renderRapport(r: Rapport, stats: Stats, prenom: string, dateGen:
     <h2>Toi contre ton relevé.<br>Le relevé gagne ${r.mensonges.length}-0.</h2>${lies}</div></section>`);
 
   if (r.fuites) {
-    const rows = r.fuites.lignes.map((l) => `<div class="row"><span>${esc(l.label).toUpperCase()}</span><span>${esc(l.montant_json)}</span></div>`).join("");
+    /* Une seule ligne de fuite mal formée — un trou dans le tableau, un objet sans
+       libellé — et c'était tout le rapport qui tombait : « Cannot read properties of
+       undefined (reading 'label') ». Le client avait payé, la rédaction avait abouti,
+       et il ne recevait rien. Vu trois fois le 06/10 sur le banc d'essai.
+       On écarte la ligne fautive au lieu de perdre le rapport entier. */
+    const lignes = (Array.isArray(r.fuites.lignes) ? r.fuites.lignes : []).filter((l) => l && l.label);
+    const rows = lignes.map((l) => `<div class="row"><span>${esc(l.label).toUpperCase()}</span><span>${esc(l.montant_json)}</span></div>`).join("");
     S.push(`<section><div class="wrap"><div class="kicker">Les fuites</div><h2>L'argent qui part sans<br>demander ton avis.</h2>
       ${paras(r.fuites.intro)}<div class="ticket">${rows}<div class="total"><span>${esc(r.fuites.total_label ?? "TOTAL").toUpperCase()}</span><span class="aie">AÏE.</span></div></div>${paras(r.fuites.punchline)}</div></section>`);
   }
