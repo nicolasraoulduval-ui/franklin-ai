@@ -17,7 +17,7 @@ function sessionId(): string {
 
 function suivre(nom: string, props?: Record<string, unknown>): void {
   try {
-    const corps = JSON.stringify({ nom, session: sessionId(), props: props ?? {} });
+    const corps = JSON.stringify({ nom, session: sessionId(), props: props ?? {}, source: (function(){try{var u=new URLSearchParams(location.search).get("s");if(u){sessionStorage.setItem("fsrc",u);return u}return sessionStorage.getItem("fsrc")}catch(e){return null}})() });
     if (navigator.sendBeacon) navigator.sendBeacon("/api/evt", new Blob([corps], { type: "application/json" }));
     else void fetch("/api/evt", { method: "POST", headers: { "content-type": "application/json" }, body: corps, keepalive: true });
   } catch {
