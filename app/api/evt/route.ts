@@ -8,9 +8,9 @@ export const runtime = "nodejs";
  *  interrompre le parcours d'un client. */
 export async function POST(req: Request) {
   try {
-    const { nom, session, props } = await req.json();
+    const { nom, session, props, source } = await req.json();
     if (EVENEMENTS.includes(nom)) {
-      await journaliser(nom as Evenement, String(session ?? "anon"), typeof props === "object" && props ? props : {});
+      await journaliser(nom as Evenement, String(session ?? "anon"), typeof props === "object" && props ? props : {}, source);
     }
   } catch {
     /* un événement perdu ne vaut pas une erreur affichée */
