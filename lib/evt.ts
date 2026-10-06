@@ -64,8 +64,26 @@ async function ecrire(table: string, ligne: Record<string, unknown>): Promise<vo
   }
 }
 
-export async function journaliser(nom: Evenement, session: string, props?: Record<string, unknown>): Promise<void> {
-  await ecrire("franklin_events", { nom, session: String(session).slice(0, 40), props: props ?? {} });
+/* Provenance : une étiquette courte lue dans l'URL d'arrivée (?s=meta) et
+   conservée toute la session. Liste fermée de caractères et longueur bornée —
+   ce champ vient du navigateur, il ne doit pas pouvoir écrire n'importe quoi. */
+function sourcePropre(s: unknown): string | null {
+  const v = String(s ?? "").trim().toLowerCase().slice(0, 24);
+  return /^[a-z0-9_-]{2,24}$/.test(v) ? v : null;
+}
+
+export async function journaliser(
+  nom: Evenement,
+  session: string,
+  props?: Record<string, unknown>,
+  source?: unknown,
+): Promise<void> {
+  await ecrire("franklin_events", {
+    nom,
+    session: String(session).slice(0, 40),
+    props: props ?? {},
+    source: sourcePropre(source),
+  });
 }
 
 /**
