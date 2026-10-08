@@ -43,6 +43,12 @@ export default function Analyse() {
   const [files, setFiles] = useState<File[]>([]);
   const [prenom, setPrenom] = useState("");
   const [consent, setConsent] = useState(false);
+  /* Renonciation au droit de rétractation (art. L221-28 13°). Le rapport est
+     livré dans la minute : sans accord exprès ET renonciation expresse, le
+     client peut exiger un remboursement sous quatorze jours après l'avoir lu.
+     Une phrase dans les CGV ne vaut pas accord — il faut un geste distinct,
+     ici, au moment de payer. */
+  const [renonce, setRenonce] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [preview, setPreview] = useState<string[] | null>(null);
@@ -234,7 +240,15 @@ export default function Analyse() {
             ))}
           </div>
           <p style={{ color: "#6b6f7e" }}>Le portrait complet — archétype, mensonges, fuites, bulletin, verdict et 4 cartes à partager — t&apos;attend derrière.</p>
-          <button onClick={payer} disabled={busy} style={cta}>
+          <label style={{ display: "flex", gap: 10, alignItems: "flex-start", margin: "0 0 16px", fontSize: 13.5, lineHeight: 1.5, color: "#4a4f60", cursor: "pointer" }}>
+            <input type="checkbox" checked={renonce} onChange={(e) => setRenonce(e.target.checked)}
+              style={{ width: 20, height: 20, marginTop: 1, flexShrink: 0, accentColor: "#2f4df0", cursor: "pointer" }} />
+            <span>
+              Je demande que mon rapport soit rédigé tout de suite et je renonce à mon
+              droit de rétractation de 14 jours, le contenu étant livré immédiatement.
+            </span>
+          </label>
+          <button onClick={payer} disabled={busy || !renonce} style={cta}>
             {busy ? "REDIRECTION…" : `DÉBLOQUER MON RAPPORT — ${PRIX_AFFICHE} →`}
           </button>
           {error && <p style={{ color: "#e6392e", fontFamily: mono }}>{error}</p>}
