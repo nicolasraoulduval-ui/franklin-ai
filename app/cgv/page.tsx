@@ -7,6 +7,13 @@ export const metadata = { title: "Conditions générales de vente — Franklin A
 export default function CGV() {
   return (
     <LegalLayout titre="Conditions générales de vente">
+      <h2>Le vendeur</h2>
+      <p>
+        Nicolas Raoul-Duval, entrepreneur individuel — 3 rue du Printemps, 75017 Paris.
+        <br />
+        SIREN 907 727 051 — 07 81 73 27 38 — nicolas.raoulduval@gmail.com
+      </p>
+
       <h2>Le service</h2>
       <p>
         Franklin AI analyse le ou les relevés bancaires que tu fournis et génère : un aperçu gratuit (trois faits chiffrés)
@@ -14,7 +21,7 @@ export default function CGV() {
       </p>
       <h2>Prix et paiement</h2>
       <p>
-        Le rapport complet coûte <strong>{PRIX_TTC}</strong>, en paiement unique via Stripe. Aucun abonnement,
+        Le rapport complet coûte <strong>{PRIX_TTC} — TVA non applicable, article 293 B du Code général des impôts</strong>, en paiement unique via Stripe. Aucun abonnement,
         aucun prélèvement récurrent.
       </p>
       <h2>Livraison</h2>
