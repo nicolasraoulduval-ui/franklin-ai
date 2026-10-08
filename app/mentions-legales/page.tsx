@@ -8,9 +8,17 @@ export default function MentionsLegales() {
     <LegalLayout titre="Mentions légales">
       <h2>Éditeur du site</h2>
       <p>
-        Franklin AI est édité par Nicolas Raoul-Duval.
+        Franklin AI est édité par <strong>Nicolas Raoul-Duval</strong>, entrepreneur individuel.
         <br />
-        Contact : nicolas.raoulduval@gmail.com
+        3 rue du Printemps, 75017 Paris
+        <br />
+        SIREN 907 727 051 — code APE 58.29C (édition de logiciels applicatifs)
+        <br />
+        Téléphone : 07 81 73 27 38 — nicolas.raoulduval@gmail.com
+        <br />
+        Directeur de la publication : Nicolas Raoul-Duval
+        <br />
+        TVA non applicable, article 293 B du Code général des impôts.
       </p>
       <h2>Hébergement</h2>
       <p>
