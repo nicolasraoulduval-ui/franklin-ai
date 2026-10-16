@@ -222,13 +222,30 @@ export function enrich(vr: VisionResult): RawTransaction[] {
   });
 }
 
+/* Un virement vers son propre livret n'est pas une depense, mais le libelle ne porte
+   pas toujours le nom du titulaire : « VIR SEPA LIVRET A » n'en contient aucun. Sans
+   ces motifs, l'epargne part en sortie, le taux de reste-a-la-fin s'effondre et la note
+   de tenue du compte punit celui qui epargne le plus.
+   Volontairement limite aux enveloppes sans ambiguite : Lydia, Revolut ou Paypal servent
+   autant a rembourser un ami qu'a s'envoyer de l'argent, les compter en interne ferait
+   disparaitre de vraies depenses. */
+const COMPTES_EPARGNE = [
+  "LIVRET\\s*(A|B|BLEU|JEUNE|DEVELOPPEMENT)",
+  "\\bLDDS?\\b", "\\bLEP\\b", "\\bPEL\\b", "\\bCEL\\b", "\\bPEA\\b",
+  "ASSURANCE[\\s-]*VIE",
+  "COMPTE[\\s-]*(TITRES?|EPARGNE|A[\\s-]*TERME)",
+  "TRADE[\\s-]*REPUBLIC",
+  "VIR(EMENT)?[\\s-]*INTERNE", "TRANSFERT[\\s-]*INTERNE",
+  "\\bEPARGNE\\b",
+];
+
 /** déduit les patterns "soi-même" du nom du titulaire imprimé sur le relevé */
 export function selfPatternsFromHolder(titulaire: string): string[] {
   const clean = titulaire.replace(/^(M|MME|MLE|MLLE|MR|MONSIEUR|MADAME)\.?\s+/i, "");
   const names = clean.split(/[\s-]+/).filter((w) => w.length >= 3)
     .map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-  if (!names.length) return ["__aucun__"];
+  if (!names.length) return [...COMPTES_EPARGNE];
   const fwd = names.join("[\\s-]+");
   const rot = names.slice(1).concat(names[0]).join("[\\s-]+");
-  return [fwd, rot];
+  return [fwd, rot, ...COMPTES_EPARGNE];
 }
