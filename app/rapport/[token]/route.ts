@@ -226,8 +226,9 @@ const ATTENTE = `<!DOCTYPE html>
   p{font-size:13.5px;line-height:1.7;color:#4a4f60;margin:0}
   .j{min-height:3.4em;display:flex;align-items:center;justify-content:center}
   .barre{margin:24px auto 0;width:210px;height:7px;border:2px solid #14161f;border-radius:99px;overflow:hidden;background:#fff}
-  .barre i{display:block;height:100%;width:35%;background:#2f4df0;animation:av 1.5s ease-in-out infinite}
-  @keyframes av{0%{margin-left:-35%}100%{margin-left:100%}}
+  .barre i{display:block;height:100%;width:0;background:#2f4df0;transition:width .3s linear}
+  .pct{margin-top:11px;font-size:12px;letter-spacing:.06em;color:#6b6f7e}
+  .pct b{color:#14161f;font-weight:700;font-size:13.5px}
   .pied{margin-top:26px;font-size:11.5px;color:#6b6f7e;line-height:1.6}
 </style></head><body>
 <div class="b">
@@ -242,7 +243,8 @@ const ATTENTE = `<!DOCTYPE html>
   <p class="encaisse">✓ Paiement confirmé</p>
   <h1>Franklin écrit<br>ton rapport.</h1>
   <div class="j"><p id="j">Il relit tes lignes une dernière fois.</p></div>
-  <div class="barre"><i></i></div>
+  <div class="barre"><i id="bi"></i></div>
+  <p class="pct"><b id="bp">0 %</b> rédigé</p>
   <p class="pied">Environ trente secondes. Ne ferme pas cette page —<br>elle s'ouvrira toute seule.</p>
 </div>
 <script>
@@ -254,6 +256,19 @@ var J = ["Il relit tes lignes une dernière fois.",
          "Il a trouvé quelque chose. Il le garde pour la fin."];
 var k = 0;
 setInterval(function(){ k = (k + 1) % J.length; document.getElementById('j').textContent = J[k]; }, 4000);
+
+/* La barre glissait en boucle sans jamais rien dire : au bout de quarante secondes,
+   une animation qui tourne sans avancer se lit comme un plantage. L'écran de dépôt
+   affiche un pourcentage, celui-ci n'en avait pas. Même courbe que lui : asymptote
+   qui décélère et ne touche jamais 100, pour ne jamais se bloquer en fin de course
+   ni promettre une fin qui n'arrive pas. 63 % à 28 s, 88 % à 60 s. */
+var T0 = Date.now();
+setInterval(function(){
+  var t = (Date.now() - T0) / 1000;
+  var pct = Math.min(99, (1 - Math.exp(-t / 28)) * 100);
+  var bi = document.getElementById("bi"); if (bi) bi.style.width = pct.toFixed(1) + "%";
+  var bp = document.getElementById("bp"); if (bp) bp.textContent = Math.round(pct) + " %";
+}, 250);
 
 /* On demande la fabrication, puis on recharge. Si la connexion casse en route,
    on retente une fois : le POST est idempotent côté serveur. */
