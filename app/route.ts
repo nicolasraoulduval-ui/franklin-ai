@@ -77,8 +77,42 @@ html = html.slice(0, avantEtapes) + SCHEMAS_LANDING + "\n\n" + html.slice(avantE
 //     encore convaincu, c'est afficher l'effort avant la récompense. Il est
 //     désormais uniquement à l'étape 1 du tunnel, une fois la décision prise.
 
+// 3 ter · l'objection « je pourrais pas demander à une IA ? ».
+//     Un testeur l'a posée telle quelle. Elle est légitime et il vaut mieux y
+//     répondre sur la page que la laisser trancher dans la tête du visiteur.
+//     Deux arguments seulement, les deux vérifiables dans le produit : le
+//     validateur de chiffres, et les mesures qu'on ne pense pas à demander.
+const CSS_POURQUOI = `
+.pourquoi{padding:74px 0;background:#fbfbf8;border-top:2px solid #14161f;border-bottom:2px solid #14161f}
+.pourquoi h2{font-family:'Gabarito',sans-serif;font-weight:900;font-size:34px;line-height:1.12;margin:0 0 10px}
+.pourquoi .pq-intro{font-size:16px;color:#4a4f60;margin:0 0 34px;max-width:620px}
+.pq-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.pq-item{background:#fff;border:2.5px solid #14161f;border-radius:14px;padding:23px 25px;box-shadow:4px 4px 0 #14161f}
+.pq-item b{display:block;font-family:'Gabarito',sans-serif;font-weight:900;font-size:18.5px;line-height:1.2;margin-bottom:10px}
+.pq-item span{display:block;font-size:14.5px;line-height:1.66;color:#4a4f60}
+@media(max-width:760px){.pourquoi{padding:52px 0}.pourquoi h2{font-size:26px}.pq-grid{grid-template-columns:1fr;gap:16px}}
+`;
+
+const POURQUOI = `
+<section class="pourquoi">
+  <div class="wrap">
+    <h2>« Je pourrais pas juste demander à une IA ? »</h2>
+    <p class="pq-intro">Tu pourrais. Elle te répondrait avec des chiffres faux.</p>
+    <div class="pq-grid">
+      <div class="pq-item">
+        <b>Les chiffres sont calculés, pas générés.</b>
+        <span>Donne quatre cents lignes de relevé à une IA, elle inventera des totaux : elle est faite pour écrire, pas pour additionner. Ici le code compte, le modèle rédige. Un validateur relit chaque rapport et le refuse si un seul nombre n'existe pas dans tes données.</span>
+      </div>
+      <div class="pq-item">
+        <b>Il cherche ce que tu n'aurais pas demandé.</b>
+        <span>La part de ton salaire partie en sept jours. Les virements passés entre 22 h et 4 h. Les abonnements que tu paies sans les ouvrir. Les commissions que ta banque prélève sans le dire. Personne ne pense à poser ces questions-là — c'est tout l'intérêt.</span>
+      </div>
+    </div>
+  </div>
+</section>`;
+
 // 4 · CSS et JS des nouvelles sections
-html = html.replace("</style>", CSS_V2 + CSS_SCHEMAS + CSS_BANDEAU + CSS_FINAL + "\n</style>");
+html = html.replace("</style>", CSS_V2 + CSS_SCHEMAS + CSS_BANDEAU + CSS_POURQUOI + CSS_FINAL + "\n</style>");
 /* La landing n'envoyait aucun événement : le tunnel commençait donc à
    « analyse_etape_1 », et on ignorait combien de visiteurs cliquent réellement
    sur le bouton. C'est pourtant le seul chiffre qui dit si la page convainc.
@@ -108,7 +142,7 @@ html = html.replace("</body>", JS_V2 + SUIVI_LANDING + "\n</body>");
 //         séparateur — on ne met rien derrière lui.
 const finFooter = html.lastIndexOf("<footer");
 const avantFooter = finFooter >= 0 ? finFooter : html.indexOf("</body>");
-html = html.slice(0, avantFooter) + "\n" + BANDEAU_EXTRAITS + "\n" + CTA_FINAL + "\n" + html.slice(avantFooter);
+html = html.slice(0, avantFooter) + "\n" + POURQUOI + "\n" + BANDEAU_EXTRAITS + "\n" + CTA_FINAL + "\n" + html.slice(avantFooter);
 
 // 5 · le prix reste écrit en dur dans la chaîne héritée ; on le réaligne
 //     sur la source unique au cas où il subsisterait une mention ailleurs
