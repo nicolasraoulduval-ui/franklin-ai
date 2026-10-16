@@ -47,6 +47,22 @@ html = supprimeSection(html, '<section class="pricing" id="prix">');
 // 2 · les trois étapes montrent ce qu'elles font, au lieu de le décrire
 html = remplaceSection(html, '<section class="steps">', STEPS_V2);
 
+// 2 bis · la phrase d'accroche dit ce qu'on obtient, pas sur quel ton.
+//     L'ancienne promettait « l'humour d'un pote qui t'aime bien » : c'est un ton,
+//     pas un livrable. Un testeur est reparti en disant qu'il n'avait pas compris
+//     ce que le produit faisait. On nomme les sections du rapport, et on annonce
+//     la durée : personne n'achète ce qu'il n'arrive pas à se représenter.
+const LEDE =
+  '<p class="lede"><b>Franklin</b>, c\'est ton relevé bancaire qui a pris vie. ' +
+  'Tu déposes tes relevés, il les lit ligne par ligne et t\'écrit ton portrait : ' +
+  'ton archétype, les mensonges que tu te racontes, où ton argent fuit, et ton ' +
+  'bulletin noté sur 20. Trois minutes. Chaque chiffre est calculé, jamais inventé.</p>';
+{
+  const dLede = html.indexOf('<p class="lede">');
+  const fLede = dLede >= 0 ? html.indexOf("</p>", dLede) : -1;
+  if (dLede >= 0 && fLede >= 0) html = html.slice(0, dLede) + LEDE + html.slice(fLede + 4);
+}
+
 // 3 · les schémas, à la place du tutoriel.
 //     La page expliquait ce que Franklin fait sans jamais le montrer. Quatre
 //     graphiques valent mieux qu'un paragraphe : le visiteur se reconnaît
