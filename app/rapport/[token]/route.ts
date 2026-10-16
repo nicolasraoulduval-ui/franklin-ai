@@ -185,6 +185,17 @@ export async function GET(req: Request, { params }: { params: { token: string } 
       ? page.replace("</head>", RATTRAPAGE_MOBILE + "</head>")
       : RATTRAPAGE_MOBILE + page;
   }
+  /* Le nom du fichier telecharge est celui du titre du document. Sans <title>, le
+     navigateur baptise le PDF avec l'URL, soit un token illisible. On l'injecte au
+     service plutot qu'a la fabrication : les rapports deja vendus en profitent aussi. */
+  const prenomPropre = String(rec.prenom ?? "").replace(/[<>&"'\/\\:*?|]/g, "").trim() || "toi";
+  const titre = "Franklin \u2014 Le portrait de " + prenomPropre;
+  page = /<title>[\s\S]*?<\/title>/i.test(page)
+    ? page.replace(/<title>[\s\S]*?<\/title>/i, "<title>" + titre + "</title>")
+    : page.includes("</head>")
+      ? page.replace("</head>", "<title>" + titre + "</title></head>")
+      : "<title>" + titre + "</title>" + page;
+
   return new Response(page, { headers: { "content-type": "text/html; charset=utf-8" } });
 }
 
