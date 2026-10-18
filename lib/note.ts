@@ -62,9 +62,17 @@ export function calculerNote(stats: Stats): NoteGestion {
   const net: number = stats?.totaux?.net ?? 0;
   const nbMois: number = stats?.periode?.nb_mois ?? 0;
 
+  /* Les virements vers ses propres comptes ne sont ni une dépense ni un revenu.
+     Tant qu'ils comptaient comme des sorties, quelqu'un qui plaçait 600 € par mois
+     sur son Livret A lisait « 23 % de ce qui est entré est encore là » et perdait un
+     point — le critère punissait l'épargne qu'il était censé récompenser.
+     Repli sur les totaux bruts pour les rapports calculés avant cette distinction. */
+  const creditsRef: number = stats?.totaux?.credits_hors_epargne ?? credits;
+  const netRef: number = stats?.totaux?.net_hors_epargne ?? net;
+
   // 1 · ce qui reste à la fin — solde net rapporté à tout ce qui est entré
-  if (credits > 0) {
-    const taux = (100 * net) / credits;
+  if (creditsRef > 0) {
+    const taux = (100 * netRef) / creditsRef;
     const t = Math.abs(Math.round(taux));
     sous.push({
       matiere: "Tenue du compte",
@@ -82,7 +90,11 @@ export function calculerNote(stats: Stats): NoteGestion {
   // 2 · régularité — proportion de mois terminés à l'équilibre ou mieux
   const mois = stats?.par_mois ? Object.values(stats.par_mois as Record<string, any>) : [];
   if (mois.length >= 2) {
-    const positifs = mois.filter((m: any) => (m?.net ?? 0) >= 0).length;
+    /* Même correction que pour le taux de reste : un mois où 400 € sont partis sur le
+       Livret A passait pour un mois où l'on a « creusé ». Mettre de l'argent de côté
+       n'est pas finir le mois dans le rouge. */
+    const netMois = (m: any): number => m?.net_hors_epargne ?? m?.net ?? 0;
+    const positifs = mois.filter((m: any) => netMois(m) >= 0).length;
     const part = (100 * positifs) / mois.length;
     sous.push({
       matiere: "Art de finir le mois",
@@ -93,14 +105,14 @@ export function calculerNote(stats: Stats): NoteGestion {
   }
 
   // 3 · frais de découvert — le seul poste que la banque facture pour rien
-  if (credits > 0 && stats?.frais_decouvert) {
+  if (creditsRef > 0 && stats?.frais_decouvert) {
     const fr: number = stats.frais_decouvert.total ?? 0;
-    const part = (100 * fr) / credits;
+    const part = (100 * fr) / creditsRef;
     /* Ne pas payer de frais de découvert est la situation ordinaire, pas un
        exploit : neuf profils du banc sur dix y arrivaient et empochaient 4/4
        automatiquement. Le point de plus va à qui, en prime, n'a jamais fini un
        mois dans le rouge. */
-    const tousPositifs = mois.length >= 2 && mois.every((m: any) => (m?.net ?? 0) >= 0);
+    const tousPositifs = mois.length >= 2 && mois.every((m: any) => (m?.net_hors_epargne ?? m?.net ?? 0) >= 0);
     sous.push({
       matiere: "Distance avec le découvert",
       note: fr === 0 ? (tousPositifs ? 4 : 3) : palier(part, [[0.1, 3], [0.3, 2], [1, 1]], true),
@@ -140,8 +152,8 @@ export function calculerNote(stats: Stats): NoteGestion {
 
   // 5 · abonnements — la dépense qu'on ne décide plus chaque mois
   const abosMensuel: number = stats?.abonnements?.total_mensuel ?? 0;
-  if (credits > 0 && nbMois > 0 && abosMensuel > 0) {
-    const revenuMensuel = credits / nbMois;
+  if (creditsRef > 0 && nbMois > 0 && abosMensuel > 0) {
+    const revenuMensuel = creditsRef / nbMois;
     const part = (100 * abosMensuel) / revenuMensuel;
     /* Le libellé doit porter la mesure, pas seulement le montant. Un « 105,56 €
        par mois » affiché à côté d'un 4/4 se lit comme une contradiction ; le
