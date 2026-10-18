@@ -199,17 +199,23 @@ export function computeStats(raw: RawTransaction[], config: StatsConfig) {
     net_hors_epargne: C(credHorsSoi - debHorsSoi),
   };
 
-  const perM = new Map<string, [number, number]>();
+  /* Quatre compteurs par mois : le flux brut, et le même hors virements vers soi.
+     Un mois où 400 € partent sur le Livret A finit « négatif » au sens du relevé
+     alors que rien n'a été dépensé ; le critère « Art de finir le mois » lit donc
+     la version hors épargne. Les deux sont conservés : le brut reste ce que la
+     banque affiche, et c'est lui qui doit coller au relevé du client. */
+  const perM = new Map<string, [number, number, number, number]>();
   for (const t of tx) {
-    const v = perM.get(t.month) ?? [0, 0];
+    const v = perM.get(t.month) ?? [0, 0, 0, 0];
     v[t.side === "debit" ? 0 : 1] += t.amount;
+    if (!t.self_transfer) v[t.side === "debit" ? 2 : 3] += t.amount;
     perM.set(t.month, v);
   }
   const monthKey = (m: string) => m.slice(3) + m.slice(0, 2);
   stats.par_mois = Object.fromEntries(
     [...perM.entries()]
       .sort((a, b) => monthKey(a[0]).localeCompare(monthKey(b[0])))
-      .map(([m, v]) => [m, { debits: C(v[0]), credits: C(v[1]), net: C(v[1] - v[0]) }])
+      .map(([m, v]) => [m, { debits: C(v[0]), credits: C(v[1]), net: C(v[1] - v[0]), net_hors_epargne: C(v[3] - v[2]) }])
   );
 
   // ---------- revenus récurrents ----------
