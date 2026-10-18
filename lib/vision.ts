@@ -15,6 +15,7 @@ const SCHEMA = {
       date_nouv: { type: "string" }, solde_nouv: { type: "number" },
       total_debits_imprime: { type: "number", description: "total débit IMPRIMÉ — recopié, jamais calculé" },
       total_credits_imprime: { type: "number", description: "total crédit IMPRIMÉ — recopié, jamais calculé" },
+      periodes_detectees: { type: "number", description: "AVANT d'extraire : nombre de relévés ou périodes distincts présents dans le document (compte les en-têtes de période). 1 si le document ne contient qu'un seul relévé." },
     }, required: ["date_prec", "solde_prec", "date_nouv", "solde_nouv"] },
     transactions: { type: "array", items: { type: "object", properties: {
       date: { type: "string", description: "date comptable dd/mm/yyyy" },
@@ -73,6 +74,9 @@ Règles absolues :
 - La colonne du montant détermine \`side\`. Vérifie la position visuellement.
 - SOLDE PRÉCÉDENT / NOUVEAU SOLDE / TOTAUX DES MOUVEMENTS ne sont PAS des transactions : meta.
 - N'ignore jamais une écriture au motif qu'elle est petite ou répétitive.
+- Un même fichier peut contenir PLUSIEURS relévés mensuels à la suite. Tu les extrais TOUS,
+  pas seulement le premier. Avant d'extraire, compte les en-têtes de période et renseigne
+  meta.periodes_detectees. Les totaux imprimés à recopier sont ceux du DERNIER relévé du fichier.
 
 Trois champs demandent une lecture, pas une recopie :
 - \`merchant\` : le nom du commerçant, débarrassé de l'habillage bancaire. « CARTE X8497
@@ -137,6 +141,31 @@ function coherence(r: VisionResult): string[] {
   return errs;
 }
 
+/* Un fichier peut contenir plusieurs relévés mensuels à la suite, et le contrôle de
+   cohérence ci-dessus n'y voit rien : si la lecture s'arrête après le premier relévé,
+   les totaux imprimés recopiés sont ceux de ce relévé-là, et tout concorde.
+   Mesuré le 18/10 sur un document de six relévés : 193 écritures présentes, 28 extraites,
+   aucune erreur signalée. Le client aurait payé pour un sixième de son analyse.
+   D'où ce second contrôle : on demande au modèle de compter les périodes AVANT d'extraire
+   — compter des en-têtes est une tâche simple, indépendante de l'extraction — et on
+   compare à ce que les transactions couvrent réellement. */
+function moisCouverts(r: VisionResult): number {
+  const s = new Set<string>();
+  for (const t of r.transactions) {
+    const m = String(t.date ?? "").match(/^\d{2}\/(\d{2})\/(\d{4})$/);
+    if (m) s.add(m[2] + "-" + m[1]);
+  }
+  return s.size;
+}
+
+function couvertureIncomplete(r: VisionResult): string | null {
+  const annonce = (r.meta as { periodes_detectees?: number }).periodes_detectees;
+  if (!annonce || annonce < 2) return null;
+  const vus = moisCouverts(r);
+  if (vus >= annonce) return null;
+  return `document annonçant ${annonce} périodes, transactions couvrant seulement ${vus} mois`;
+}
+
 /** Filet de sécurité : un modèle sollicité sur un document sans heure finit
  *  toujours par en produire une. On les supprime à la source plutôt que de
  *  faire confiance au schéma. */
@@ -181,9 +210,16 @@ export async function parsePdf(buf: Buffer): Promise<VisionResult> {
   for (let attempt = 1; attempt <= 3; attempt++) {
     const r = await call(b64, extra);
     const errs = coherence(r);
+    /* La troncature pèse plus lourd que l'écart de centimes : une lecture tronquée
+       a mécaniquement le plus petit écart, elle serait choisie comme la meilleure. */
+    const tronque = couvertureIncomplete(r);
+    if (tronque) errs.push(tronque);
     if (!errs.length) return sansHeures(r);
 
-    const e = ecart(r);
+    /* Pénalité énorme sur une lecture tronquée : son écart est petit par construction
+       (elle compare ses 28 lignes aux totaux de la seule page qu'elle a lue), elle
+       gagnerait la comparaison contre une lecture complète à 0,8 % près. */
+    const e = ecart(r) + (tronque ? 1e9 : 0);
     if (e < meilleurEcart) { meilleurEcart = e; meilleur = r; }
 
     extra =
