@@ -16,10 +16,23 @@ const SB_URL = process.env.SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TABLE = "franklin_rate";
 
-/** Plafonds volontairement bas : un usage humain normal, c'est un ou deux
- *  rapports. Ce qui dépasse est soit un test, soit un abus. */
-export const PAR_HEURE = 5;
-export const PAR_JOUR = 15;
+/** Plafonds rehaussés le 18/10.
+ *
+ *  Les anciens — 5 par heure, 15 par jour — étaient calés sur l'usage d'une
+ *  personne seule. Ils bloquaient dès qu'on testait le produit, et surtout ils
+ *  comptent par adresse IP : deux collègues sur le même wifi, ou plusieurs
+ *  visiteurs derrière le même opérateur mobile, partagent le compteur. À cinq
+ *  par heure, une campagne publicitaire aurait refusé de vrais clients.
+ *
+ *  Le plafond reste, parce que ce qu'il arrête n'est pas un visiteur pressé
+ *  mais un script qui boucle : à deux appels modèle facturés par analyse, dont
+ *  un sur un PDF entier, quelques centaines de requêtes suffisent à vider le
+ *  crédit. C'est la panne déjà vécue, rappelée en haut de ce fichier.
+ *
+ *  Trente par heure laisse passer n'importe quel usage humain, y compris une
+ *  salle de classe ou un bureau entier, et arrête toujours l'automate. */
+export const PAR_HEURE = 30;
+export const PAR_JOUR = 100;
 
 const memoire = ((globalThis as unknown as { __franklinRate?: Map<string, number[]> }).__franklinRate ??= new Map<string, number[]>());
 
