@@ -69,7 +69,7 @@ const CATS: Array<[string, RegExp]> = [
      lignes de tabac disparaissaient — soit le fait le plus répété du relevé. */
   ["tabac_presse", /\bTABAC\b|CIVETTE|PRESSE|BURALISTE|LE CARRE D'AS|FRANCAISE DES JEUX|\bFDJ\b|PMU\b|RELAY\b|MAISON DE LA PRESSE/i],
   ["livres", /LIBRAIRIE|MOLLAT|GIBERT|DECITRE|FURET DU NORD|CULTURA|MOMIE|BD\b|BOOKSTORE|WATERSTONES/i],
-  ["frais_bancaires", /COMMISSION D'INTERVENTION|COTISATION MENSUELLE|INTERETS DEBITEURS|AGIOS|OPTION INTERNAT|FRAIS DE TENUE|FRAIS BANCAIRES/i],
+  ["frais_bancaires", /COMMISSION\s*(D[\u2019']?\s*)?INTERVENTION|COTISATION MENSUELLE|INTERETS?\s+DEBITEURS?|\bAGIOS\b|OPTION INTERNAT|FRAIS DE TENUE|FRAIS BANCAIRES|FRAIS\s+DE\s+DECOUVERT|FRAIS\s+DE\s+REJET|FRAIS\s+PRELEVEMENT\s+REJETE/i],
 ];
 
 /** Les clés ci-dessus sont des identifiants techniques. Ces libellés sont ce
@@ -184,7 +184,20 @@ export function computeStats(raw: RawTransaction[], config: StatsConfig) {
   // ---------- totaux ----------
   const deb = C(tx.filter((t) => t.side === "debit").reduce((s, t) => s + t.amount, 0));
   const cred = C(tx.filter((t) => t.side === "credit").reduce((s, t) => s + t.amount, 0));
-  stats.totaux = { debits: deb, credits: cred, net: C(cred - deb) };
+  /* Deux nets, et c'est volontaire.
+     `net` reste le flux brut du relevé : ce que la banque afficherait.
+     `net_hors_epargne` retire les virements vers ses propres comptes des DEUX côtés.
+     400 € vers un Livret A ne sont pas une dépense, et leur retour n'est pas un revenu.
+     Sans cette distinction, quelqu'un qui met 600 € de côté chaque mois obtenait
+     « 23 % de ce qui est entré est encore là » au lieu de 46 %, et la note de tenue
+     du compte punissait précisément celui qui épargne le plus. */
+  const debHorsSoi = C(tx.filter((t) => t.side === "debit" && !t.self_transfer).reduce((s, t) => s + t.amount, 0));
+  const credHorsSoi = C(tx.filter((t) => t.side === "credit" && !t.self_transfer).reduce((s, t) => s + t.amount, 0));
+  stats.totaux = {
+    debits: deb, credits: cred, net: C(cred - deb),
+    debits_hors_epargne: debHorsSoi, credits_hors_epargne: credHorsSoi,
+    net_hors_epargne: C(credHorsSoi - debHorsSoi),
+  };
 
   const perM = new Map<string, [number, number]>();
   for (const t of tx) {
@@ -223,6 +236,14 @@ export function computeStats(raw: RawTransaction[], config: StatsConfig) {
     let key: string | null = t.merchant;
     if (t.type === "prelevement") key = t.source ?? t.beneficiaire ?? t.merchant;
     if (t.cat === "frais_bancaires" && !t.label.includes("OPTION") && !t.label.includes("COTISATION")) key = null;
+    /* Le loyer et l'électricité sont récurrents, mais ce ne sont pas des abonnements :
+       personne ne les a « oubliés ». Les compter donnait « 7 abonnements, 954,17 € par mois,
+       soit 33 % de ce qui rentre » et un 0/4 à quelqu'un dont 848 € sur 954 € étaient son
+       loyer et son EDF. Un abonnement, ici, c'est ce qu'on peut résilier sans déménager. */
+    if (t.cat === "logement") key = null;
+    /* Un virement vers ses propres comptes revient tous les mois au même montant :
+       sans cette ligne, le versement mensuel sur le Livret A devient un abonnement. */
+    if (t.self_transfer) key = null;
     if (t.label.includes("COTISATION MENSUELLE")) key = "SG option Sobrio";
     if (t.label.includes("OPTION INTERNAT")) key = "SG option internationale";
     if (key) groups.set(key, [...(groups.get(key) ?? []), t]);
@@ -280,12 +301,18 @@ export function computeStats(raw: RawTransaction[], config: StatsConfig) {
   };
 
   // ---------- frais bancaires ----------
-  const frais = tx.filter((t) => t.side === "debit" &&
-    (t.label.includes("COMMISSION D'INTERVENTION") || t.label.includes("INTERETS DEBITEURS")));
-  const comm = frais.filter((t) => t.label.includes("COMMISSION"));
+  /* Le filtre cherchait la chaîne exacte "COMMISSION D'INTERVENTION", apostrophe droite
+     comprise. Il ratait "COMMISSION D INTERVENTION", l'apostrophe typographique, les AGIOS
+     et les "FRAIS DE DECOUVERT". Mesuré le 18/10 : un relevé portant deux commissions et
+     une ligne d'agios ressortait avec "aucun frais de découvert sur la période" et 3/4,
+     et le plafond à 11/20 prévu pour ces cas ne se déclenchait jamais. */
+  const RE_COMMISSION = /COMMISSION\s*(D[\u2019']?\s*)?INTERVENTION|\bCOM\.?\s*INTERV|FRAIS\s*D[\u2019']?\s*INTERVENTION/i;
+  const RE_INTERETS = /INTERETS?\s+DEBITEURS?|\bAGIOS\b|FRAIS\s+DE\s+DECOUVERT|INTERETS?\s+DE\s+DECOUVERT/i;
+  const frais = tx.filter((t) => t.side === "debit" && (RE_COMMISSION.test(t.label) || RE_INTERETS.test(t.label)));
+  const comm = frais.filter((t) => RE_COMMISSION.test(t.label));
   stats.frais_decouvert = {
     commissions_intervention: { nb: comm.length, total: C(comm.reduce((s, t) => s + t.amount, 0)) },
-    interets_debiteurs: C(frais.filter((t) => t.label.includes("INTERETS")).reduce((s, t) => s + t.amount, 0)),
+    interets_debiteurs: C(frais.filter((t) => RE_INTERETS.test(t.label)).reduce((s, t) => s + t.amount, 0)),
     total: C(frais.reduce((s, t) => s + t.amount, 0)),
     dates: frais.map((t) => t.date).sort(),
   };
