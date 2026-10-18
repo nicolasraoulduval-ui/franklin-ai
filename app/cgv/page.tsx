@@ -34,9 +34,11 @@ export default function CGV() {
       </p>
       <h2>Droit de rétractation</h2>
       <p>
-        Le rapport est un contenu numérique fourni immédiatement après paiement. En payant, tu demandes son exécution
-        immédiate et renonces expressément à ton droit de rétractation (article L221-28 du Code de la consommation).
-        Si le rapport n&apos;a pas pu être généré ou présente un problème réel, écris-nous : nous remboursons sans discuter.
+        Le rapport est un contenu numérique fourni immédiatement après paiement. Tu disposes de quatorze jours
+        à compter de ton achat pour te rétracter et obtenir le remboursement, sans avoir à te justifier :
+        écris-nous et nous te remboursons.
+        Si le rapport n&apos;a pas pu être généré ou présente un problème réel, le remboursement est immédiat,
+        sans condition de délai.
       </p>
       <h2>Ce que Franklin n&apos;est pas</h2>
       <p>
