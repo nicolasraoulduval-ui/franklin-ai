@@ -7,7 +7,7 @@
  */
 
 /** Montant débité par Stripe, en centimes. */
-export const PRIX_CENTIMES = 690;
+export const PRIX_CENTIMES = 990;
 
 /** Le même, formaté à la française, pour tout affichage. */
 export const PRIX_AFFICHE = (PRIX_CENTIMES / 100).toFixed(2).replace(".", ",") + " €";
