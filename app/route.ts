@@ -111,8 +111,60 @@ const POURQUOI = `
   </div>
 </section>`;
 
+// 3 quater · le téléphone, pas l'ordinateur.
+//     Mesuré le 30/10 en 375 px : la page fait dix écrans et demi, l'animation
+//     de marche sortait la mascotte et sa bulle de 55 px à gauche de l'écran,
+//     le bouton principal était en 13,5 px et les liens de pied de page offraient
+//     15 px de hauteur à viser au pouce. Le trafic publicitaire arrive d'Instagram :
+//     il est mobile à peu près intégralement.
+const CSS_MOBILE = `
+@media(max-width:700px){
+  /* L'animation « pace » déplace la mascotte horizontalement : tolérable sur 1200 px,
+     hors cadre sur 375. On la fige ; bras, bouche et clignements continuent. */
+  .walker{animation:none !important;max-width:100%}
+  .bubble{max-width:78vw;font-size:13.5px}
+  .stage{overflow-x:clip}
+  /* Un bouton se vise au pouce : 56 px de haut, pleine largeur, pas de demi-ligne. */
+  .hero-ctas{gap:11px}
+  .hero-ctas .btn{width:100%;box-sizing:border-box;text-align:center;font-size:15px;
+    padding:18px 20px;min-height:56px;display:flex;align-items:center;justify-content:center}
+  .nav-cta{font-size:12px;min-height:44px;display:inline-flex;align-items:center;padding:0 14px}
+  footer a{display:inline-block;padding:10px 3px}
+  body.fr-sticky-on{padding-bottom:88px}
+}
+/* Barre d'action fixe : sur dix écrans de haut, le bouton du hero disparaît au premier
+   mouvement de pouce et ne revient jamais. Elle apparaît après le premier écran — pas
+   avant, pour ne pas recouvrir le hero au moment où il fait son travail. */
+#fr-sticky{display:none}
+@media(max-width:700px){
+  #fr-sticky{display:block;position:fixed;left:0;right:0;bottom:0;z-index:9990;
+    padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));
+    background:rgba(251,251,248,.96);border-top:2px solid #14161f;
+    transform:translateY(130%);transition:transform .22s ease}
+  #fr-sticky.on{transform:translateY(0)}
+  #fr-sticky a{display:flex;align-items:center;justify-content:center;min-height:54px;
+    background:#2f4df0;color:#fff;text-decoration:none;border:2px solid #14161f;border-radius:10px;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-weight:700;font-size:14.5px;letter-spacing:.02em}
+}`;
+
+const STICKY = `<div id="fr-sticky"><a href="/analyse">FAIRE PARLER MON RELEVÉ →</a></div>
+<script>
+(function(){
+  var s=document.getElementById("fr-sticky");
+  if(!s || window.innerWidth>700) return;
+  var seuil=window.innerHeight*0.85;
+  function maj(){
+    var on=window.scrollY>seuil;
+    s.classList.toggle("on",on);
+    document.body.classList.toggle("fr-sticky-on",on);
+  }
+  window.addEventListener("scroll",maj,{passive:true});
+  maj();
+})();
+<\/script>`;
+
 // 4 · CSS et JS des nouvelles sections
-html = html.replace("</style>", CSS_V2 + CSS_SCHEMAS + CSS_BANDEAU + CSS_POURQUOI + CSS_FINAL + "\n</style>");
+html = html.replace("</style>", CSS_V2 + CSS_SCHEMAS + CSS_BANDEAU + CSS_POURQUOI + CSS_FINAL + CSS_MOBILE + "\n</style>");
 /* La landing n'envoyait aucun événement : le tunnel commençait donc à
    « analyse_etape_1 », et on ignorait combien de visiteurs cliquent réellement
    sur le bouton. C'est pourtant le seul chiffre qui dit si la page convainc.
@@ -129,7 +181,7 @@ const SUIVI_LANDING = `<script>
 })();
 </script>`;
 
-html = html.replace("</body>", JS_V2 + SUIVI_LANDING + "\n</body>");
+html = html.replace("</body>", JS_V2 + SUIVI_LANDING + STICKY + "\n</body>");
 
 // 4 bis · le bandeau d'extraits puis le dernier appel, AVANT le pied de page.
 //         Quelqu'un qui arrive en bas a tout lu sans cliquer : lui répéter la
