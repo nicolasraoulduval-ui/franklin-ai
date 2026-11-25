@@ -52,12 +52,26 @@ html = remplaceSection(html, '<section class="steps">', STEPS_V2);
 //     pas un livrable. Un testeur est reparti en disant qu'il n'avait pas compris
 //     ce que le produit faisait. On nomme les sections du rapport, et on annonce
 //     la durée : personne n'achète ce qu'il n'arrive pas à se représenter.
+/* Deux versions de l'accroche. L'ordinateur a de la place, le téléphone n'en a pas.
+   Mesuré le 25/11 en 375 px : le titre prenait quatre lignes et le paragraphe six,
+   soit 600 px de lecture avant le premier bouton. Quelqu'un qui arrive d'un Reel doit
+   comprendre quoi, pour qui et pour quel résultat sans faire défiler. */
+const H1 =
+  '<h1><span class="fr-d">Ta banque voit tout. Elle ne dit rien. ' +
+  '<span class="hl">Franklin, lui, te raconte tout.</span></span>' +
+  '<span class="fr-m">Ta banque voit tout.<br>' +
+  '<span class="hl">Franklin te raconte tout.</span></span></h1>';
 const LEDE =
-  '<p class="lede"><b>Franklin</b>, c\'est ton relevé bancaire qui a pris vie. ' +
+  '<p class="lede fr-d"><b>Franklin</b>, c\'est ton relevé bancaire qui a pris vie. ' +
   'Tu déposes tes relevés, il les lit ligne par ligne et t\'écrit ton portrait : ' +
   'ton archétype, les mensonges que tu te racontes, où ton argent fuit, et ton ' +
-  'bulletin noté sur 20. Trois minutes. Chaque chiffre est calculé, jamais inventé.</p>';
+  'bulletin noté sur 20. Trois minutes. Chaque chiffre est calculé, jamais inventé.</p>' +
+  '<p class="lede fr-m">Dépose tes relevés. Trois minutes après, tu as ton portrait : ' +
+  'ton archétype, tes mensonges, où ton argent fuit, ta note sur 20.</p>';
 {
+  const dH1 = html.indexOf("<h1>");
+  const fH1 = dH1 >= 0 ? html.indexOf("</h1>", dH1) : -1;
+  if (dH1 >= 0 && fH1 >= 0) html = html.slice(0, dH1) + H1 + html.slice(fH1 + 5);
   const dLede = html.indexOf('<p class="lede">');
   const fLede = dLede >= 0 ? html.indexOf("</p>", dLede) : -1;
   if (dLede >= 0 && fLede >= 0) html = html.slice(0, dLede) + LEDE + html.slice(fLede + 4);
@@ -131,7 +145,28 @@ const CSS_MOBILE = `
   .nav-cta{font-size:12px;min-height:44px;display:inline-flex;align-items:center;padding:0 14px}
   footer a{display:inline-block;padding:10px 3px}
   body.fr-sticky-on{padding-bottom:88px}
+
+  /* Deux écritures du même message : la longue reste à l'ordinateur. */
+  .fr-m{display:none}
+  h1 .fr-d{display:none}
+  h1 .fr-m{display:inline}
+  p.lede.fr-d{display:none}
+  p.lede.fr-m{display:block}
+
+  /* La page faisait dix écrans et demi sur un téléphone. Un visiteur venu d'un Reel
+     n'en lit pas dix : il décide au premier, et confirme au deuxième. On garde une
+     preuve de chaque type plutôt que la collection complète — rien n'est supprimé
+     du site, tout reste visible sur grand écran. */
+  .roasts .intro{display:none}
+  .roast-list .roast:nth-child(n+3){display:none}
+  .fs-lede{display:none}
+  .fs-grid > *:nth-child(n+2){display:none}
+  section.steps{display:none}
+  .privacy-box > *:nth-child(n+2){display:none}
+  section.faq details:nth-of-type(n+3){display:none}
+  .pq-grid > *:nth-child(n+2){display:none}
 }
+@media(min-width:701px){.fr-m{display:none}}
 /* Barre d'action fixe : sur dix écrans de haut, le bouton du hero disparaît au premier
    mouvement de pouce et ne revient jamais. Elle apparaît après le premier écran — pas
    avant, pour ne pas recouvrir le hero au moment où il fait son travail. */
